@@ -64,4 +64,3 @@ All checks must pass before merging into `main`.
 
 ---
 
-Need help? Ping the maintainers or open an issue in the repository. Happy shipping!
