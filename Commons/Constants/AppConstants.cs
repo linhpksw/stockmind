@@ -2,8 +2,8 @@ namespace stockmind.Commons.Constants;
 
 public static class AppConstants
 {
-    public const string SuccessCode = "000000";
-    public const string SuccessMessage = "success";
+    public const string SuccessCode = "SUCCESS";
+    public const string SuccessMessage = "OK";
 
     public const string UnauthorizedCode = "401000";
     public const string UnauthorizedMessage = "unauthorized";

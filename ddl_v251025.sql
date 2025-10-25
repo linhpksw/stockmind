@@ -84,7 +84,8 @@ CREATE TABLE dbo.Supplier (
     leadTimeDays     INT NOT NULL DEFAULT(0) CHECK (leadTimeDays >= 0),
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted          BIT NOT NULL DEFAULT(0)
+    deleted          BIT NOT NULL DEFAULT(0),
+    deleted_at       DATETIME2(0) NULL
 );
 
 /* ==========================================================

@@ -1,9 +1,9 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using stockmind.Commons.Responses;
 using stockmind.DTOs.Auth;
 using stockmind.Services;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace stockmind.Controllers;
 

@@ -18,7 +18,7 @@ Simple ASP.NET Core Web API for internal stock management with JWT authenticatio
 2. Create the database **StockMindDB** on SQL Server.
 3. Execute the schema script located at `ddl_v251025.sql` against that database.
 
-> The application seeds default roles and users on startup. Default password: `Stockmind@123`.
+> The application seeds default roles and users on startup. Default password: `123`.
 
 ## 2. Regenerate entity models (when schema changes)
 
@@ -45,7 +45,7 @@ dotnet tool restore
 dotnet run --project stockmind.csproj
 ```
 
-Swagger UI is available in development at `http://localhost:8080/swagger/index.html`.
+Swagger UI is available in development at `https://localhost:8443/swagger/index.html`.
 
 ## 5. Git workflow guidelines
 
