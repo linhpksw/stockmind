@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using stockmind.Commons.Configurations;
+using stockmind.Commons.Swagger;
 using stockmind.Filters;
 using stockmind.Models;
 using stockmind.Repositories;
@@ -71,6 +72,7 @@ namespace stockmind
                         Array.Empty<string>()
                     }
                 });
+                options.OperationFilter<SwaggerSecurityRequirementsOperationFilter>();
             });
 
             builder.Services.AddAuthentication(options =>
@@ -98,6 +100,8 @@ namespace stockmind
             builder.Services.AddScoped<AuthRepository>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<JwtTokenService>();
+            builder.Services.AddScoped<SupplierRepository>();
+            builder.Services.AddScoped<SupplierService>();
             builder.Services.AddScoped<DataSeeder>();
 
             var app = builder.Build();

@@ -55,7 +55,7 @@ public class DataSeeder
             Roles: new[] { "CASHIER" })
     ];
 
-    private const string DefaultPassword = "Stockmind@123";
+    private const string DefaultPassword = "123";
 
     private readonly StockMindDbContext _dbContext;
     private readonly ILogger<DataSeeder> _logger;
