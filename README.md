@@ -45,7 +45,7 @@ dotnet tool restore
 dotnet run --project stockmind.csproj
 ```
 
-Swagger UI is available in development at `https://localhost:8443/swagger/index.html`.
+Swagger UI is available in development at `https://localhost:9090/swagger/index.html`.
 
 ## 5. Git workflow guidelines
 
