@@ -34,7 +34,7 @@ public class AuthService
         _accessTokenExpiryMinutes = jwtOptions.Value.AccessTokenExpiryMinutes;
     }
 
-#region Public APIs
+    #region Public APIs
 
     public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
     {
@@ -87,9 +87,9 @@ public class AuthService
         };
     }
 
-#endregion
+    #endregion
 
-#region Private helpers
+    #region Private helpers
 
     private static bool ValidatePassword(string password, UserAccount user)
     {
@@ -121,5 +121,5 @@ public class AuthService
         };
     }
 
-#endregion
+    #endregion
 }

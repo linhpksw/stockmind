@@ -24,6 +24,12 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Restore dotnet tools
+        run: dotnet tool restore
+
+      - name: Verify formatting
+        run: dotnet format stockmind.sln --verify-no-changes --no-restore
+
       - name: Build
         run: dotnet build --no-restore
 

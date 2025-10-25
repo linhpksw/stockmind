@@ -20,7 +20,7 @@ public class JwtTokenService
         _jwtSettings = jwtOptions.Value;
     }
 
-#region Public APIs
+    #region Public APIs
 
     public TokenResult GenerateAccessToken(UserAccount user, IReadOnlyCollection<string> roles)
     {
@@ -46,9 +46,9 @@ public class JwtTokenService
         return new TokenResult(token, expiresAt);
     }
 
-#endregion
+    #endregion
 
-#region Internal helpers
+    #region Internal helpers
 
     private static IEnumerable<Claim> BuildClaims(UserAccount user, IReadOnlyCollection<string> roles, DateTime issuedAt)
     {
@@ -94,5 +94,5 @@ public class JwtTokenService
         public DateTime ExpiresAt { get; }
     }
 
-#endregion
+    #endregion
 }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using stockmind.Commons.Configurations;
@@ -9,6 +10,7 @@ using stockmind.Filters;
 using stockmind.Models;
 using stockmind.Repositories;
 using stockmind.Services;
+using stockmind.Middlewares;
 using System;
 using System.Text;
 
@@ -23,6 +25,9 @@ namespace stockmind
             var connectionString = builder.Configuration.GetConnectionString("MyCnn");
             builder.Services.AddDbContext<StockMindDbContext>(opt =>
                 opt.UseSqlServer(connectionString));
+
+            builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
+            builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Query", LogLevel.Warning);
 
             var jwtSection = builder.Configuration.GetSection("Jwt");
             builder.Services.Configure<JwtSettings>(jwtSection);
@@ -111,6 +116,8 @@ namespace stockmind
             }
 
             app.UseHttpsRedirection();
+
+            app.UseMiddleware<RequestResponseLoggingMiddleware>();
 
             app.UseAuthentication();
             app.UseAuthorization();

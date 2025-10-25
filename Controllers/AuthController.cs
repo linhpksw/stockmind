@@ -18,7 +18,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-#region Endpoints
+    #region Endpoints
 
     [HttpPost("login")]
     public async Task<IActionResult> LoginAsync([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
@@ -27,5 +27,5 @@ public class AuthController : ControllerBase
         return Ok(new ResponseModel<LoginResponseDto>(result));
     }
 
-#endregion
+    #endregion
 }

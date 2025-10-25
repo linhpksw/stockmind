@@ -5,6 +5,17 @@ if [ -n "$CI" ]; then
   exit 0
 fi
 
-echo "husky - running dotnet build before commit"
+echo "husky - restoring NuGet packages"
 dotnet restore
+
+echo "husky - restoring local dotnet tools"
+dotnet tool restore
+
+echo "husky - running dotnet format"
+dotnet format stockmind.sln --no-restore
+
+echo "husky - restaging files after format"
+git add -A
+
+echo "husky - running dotnet build before commit"
 dotnet build --no-restore
