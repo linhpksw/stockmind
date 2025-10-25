@@ -11,7 +11,11 @@ public partial class Inventory
 
     public decimal OnHand { get; set; }
 
-    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
 
     public virtual Product Product { get; set; } = null!;
 }

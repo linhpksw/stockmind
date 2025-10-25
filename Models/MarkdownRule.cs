@@ -15,5 +15,11 @@ public partial class MarkdownRule
 
     public decimal FloorPercentOfCost { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual Category? Category { get; set; }
 }

@@ -21,6 +21,10 @@ public partial class UserAccount
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<Grn> Grns { get; set; } = new List<Grn>();
 
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();

@@ -13,6 +13,12 @@ public partial class Supplier
 
     public int LeadTimeDays { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<Po> Pos { get; set; } = new List<Po>();
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();

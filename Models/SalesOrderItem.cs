@@ -17,6 +17,12 @@ public partial class SalesOrderItem
 
     public decimal? AppliedMarkdownPercent { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual SalesOrder Order { get; set; } = null!;
 
     public virtual Product Product { get; set; } = null!;

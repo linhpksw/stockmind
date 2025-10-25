@@ -47,16 +47,25 @@ public partial class StockMindDbContext : DbContext
     {
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B407F04540");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B4A8DF3AF9");
 
             entity.ToTable("Category");
 
-            entity.HasIndex(e => e.Code, "UQ__Category__357D4CF9F2D1A4D6").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Category__357D4CF9A170EF7F").IsUnique();
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Code)
                 .HasMaxLength(50)
                 .HasColumnName("code");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.Name)
                 .HasMaxLength(200)
                 .HasColumnName("name");
@@ -64,16 +73,25 @@ public partial class StockMindDbContext : DbContext
 
             entity.HasOne(d => d.ParentCategory).WithMany(p => p.InverseParentCategory)
                 .HasForeignKey(d => d.ParentCategoryId)
-                .HasConstraintName("FK__Category__parent__46E78A0C");
+                .HasConstraintName("FK__Category__parent__4E88ABD4");
         });
 
         modelBuilder.Entity<Grn>(entity =>
         {
-            entity.HasKey(e => e.GrnId).HasName("PK__GRN__39D8A22A649C3847");
+            entity.HasKey(e => e.GrnId).HasName("PK__GRN__39D8A22A2E0C620C");
 
             entity.ToTable("GRN");
 
             entity.Property(e => e.GrnId).HasColumnName("grn_id");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.PoId).HasColumnName("po_id");
             entity.Property(e => e.ReceivedAt)
                 .HasPrecision(0)
@@ -92,13 +110,22 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Grnitem>(entity =>
         {
-            entity.HasKey(e => e.GrnItemId).HasName("PK__GRNItem__92DEE4E65C3A9D32");
+            entity.HasKey(e => e.GrnItemId).HasName("PK__GRNItem__92DEE4E67A28CD59");
 
             entity.ToTable("GRNItem", tb => tb.HasTrigger("TR_GRNItem_RequireExpiry_ForPerishable"));
 
             entity.Property(e => e.GrnItemId).HasColumnName("grn_item_id");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
             entity.Property(e => e.ExpiryDate).HasColumnName("expiryDate");
             entity.Property(e => e.GrnId).HasColumnName("grn_id");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.LotCode)
                 .HasMaxLength(64)
                 .HasColumnName("lotCode");
@@ -128,21 +155,26 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Inventory>(entity =>
         {
-            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__B59ACC496D15BAB8");
+            entity.HasKey(e => e.InventoryId).HasName("PK__Inventor__B59ACC4952A8C44F");
 
             entity.ToTable("Inventory");
 
             entity.HasIndex(e => e.ProductId, "IX_Inv_Product");
 
             entity.Property(e => e.InventoryId).HasColumnName("inventory_id");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.OnHand)
                 .HasColumnType("decimal(19, 4)")
                 .HasColumnName("onHand");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
-            entity.Property(e => e.UpdatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("updatedAt");
 
             entity.HasOne(d => d.Product).WithMany(p => p.Inventories)
                 .HasForeignKey(d => d.ProductId)
@@ -152,7 +184,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Lot>(entity =>
         {
-            entity.HasKey(e => e.LotId).HasName("PK__Lot__38CAA92BF05D22E9");
+            entity.HasKey(e => e.LotId).HasName("PK__Lot__38CAA92BDED711DE");
 
             entity.ToTable("Lot");
 
@@ -163,7 +195,16 @@ public partial class StockMindDbContext : DbContext
             entity.HasIndex(e => new { e.ProductId, e.LotCode }, "UQ_Lot_Product_LotCode").IsUnique();
 
             entity.Property(e => e.LotId).HasColumnName("lot_id");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
             entity.Property(e => e.ExpiryDate).HasColumnName("expiryDate");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.LotCode)
                 .HasMaxLength(64)
                 .HasColumnName("lotCode");
@@ -184,19 +225,28 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<MarkdownRule>(entity =>
         {
-            entity.HasKey(e => e.MarkdownRuleId).HasName("PK__Markdown__6A111CE19EB702DE");
+            entity.HasKey(e => e.MarkdownRuleId).HasName("PK__Markdown__6A111CE15DAD4A2C");
 
             entity.ToTable("MarkdownRule");
 
             entity.Property(e => e.MarkdownRuleId).HasColumnName("markdown_rule_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
             entity.Property(e => e.DaysToExpiry).HasColumnName("daysToExpiry");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
             entity.Property(e => e.DiscountPercent)
                 .HasColumnType("decimal(5, 2)")
                 .HasColumnName("discountPercent");
             entity.Property(e => e.FloorPercentOfCost)
                 .HasColumnType("decimal(5, 2)")
                 .HasColumnName("floorPercentOfCost");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
 
             entity.HasOne(d => d.Category).WithMany(p => p.MarkdownRules)
                 .HasForeignKey(d => d.CategoryId)
@@ -205,7 +255,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Po>(entity =>
         {
-            entity.HasKey(e => e.PoId).HasName("PK__PO__368DA7F0B4D27146");
+            entity.HasKey(e => e.PoId).HasName("PK__PO__368DA7F021B69F22");
 
             entity.ToTable("PO");
 
@@ -213,7 +263,12 @@ public partial class StockMindDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("createdAt");
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.Status)
                 .HasMaxLength(16)
                 .IsUnicode(false)
@@ -229,14 +284,23 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Poitem>(entity =>
         {
-            entity.HasKey(e => e.PoItemId).HasName("PK__POItem__E2A58305F8A2D573");
+            entity.HasKey(e => e.PoItemId).HasName("PK__POItem__E2A58305CA3D1B67");
 
             entity.ToTable("POItem");
 
             entity.HasIndex(e => e.PoId, "IX_POItem_PO");
 
             entity.Property(e => e.PoItemId).HasColumnName("po_item_id");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
             entity.Property(e => e.ExpectedDate).HasColumnName("expectedDate");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.PoId).HasColumnName("po_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.QtyOrdered)
@@ -259,19 +323,24 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Product__47027DF5B5B1AC89");
+            entity.HasKey(e => e.ProductId).HasName("PK__Product__47027DF52A56D00F");
 
             entity.ToTable("Product");
 
-            entity.HasIndex(e => e.SkuCode, "UQ__Product__CE589F319A2937CA").IsUnique();
+            entity.HasIndex(e => e.SkuCode, "UQ__Product__CE589F312D4F3DD2").IsUnique();
 
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("createdAt");
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
             entity.Property(e => e.IsPerishable).HasColumnName("isPerishable");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.LeadTimeDays).HasColumnName("leadTimeDays");
             entity.Property(e => e.MinStock).HasColumnName("minStock");
             entity.Property(e => e.Name)
@@ -289,10 +358,6 @@ public partial class StockMindDbContext : DbContext
                 .HasMaxLength(16)
                 .HasDefaultValue("unit")
                 .HasColumnName("uom");
-            entity.Property(e => e.UpdatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("updatedAt");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)
@@ -305,7 +370,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<ReplenishmentSuggestion>(entity =>
         {
-            entity.HasKey(e => e.ReplId).HasName("PK__Replenis__0FA1E662D3EBDD2B");
+            entity.HasKey(e => e.ReplId).HasName("PK__Replenis__0FA1E662DFB6A083");
 
             entity.ToTable("ReplenishmentSuggestion");
 
@@ -317,6 +382,15 @@ public partial class StockMindDbContext : DbContext
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
                 .HasColumnName("computedAt");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.LeadTimeDays).HasColumnName("leadTimeDays");
             entity.Property(e => e.OnHand)
                 .HasColumnType("decimal(19, 4)")
@@ -346,17 +420,26 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC8CD03932");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC6C7F73DA");
 
             entity.ToTable("Role");
 
-            entity.HasIndex(e => e.Code, "UQ__Role__357D4CF9F4454F64").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Role__357D4CF9ABA24741").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.Code)
                 .HasMaxLength(40)
                 .IsUnicode(false)
                 .HasColumnName("code");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
                 .HasColumnName("name");
@@ -364,7 +447,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<SalesOrder>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__SalesOrd__465962296CD68BFA");
+            entity.HasKey(e => e.OrderId).HasName("PK__SalesOrd__4659622962CFBBB3");
 
             entity.ToTable("SalesOrder");
 
@@ -372,12 +455,17 @@ public partial class StockMindDbContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("createdAt");
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
         });
 
         modelBuilder.Entity<SalesOrderItem>(entity =>
         {
-            entity.HasKey(e => e.OrderItemId).HasName("PK__SalesOrd__3764B6BCBC2E6D4A");
+            entity.HasKey(e => e.OrderItemId).HasName("PK__SalesOrd__3764B6BC33FED168");
 
             entity.ToTable("SalesOrderItem");
 
@@ -387,6 +475,15 @@ public partial class StockMindDbContext : DbContext
             entity.Property(e => e.AppliedMarkdownPercent)
                 .HasColumnType("decimal(5, 2)")
                 .HasColumnName("appliedMarkdownPercent");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Qty)
@@ -409,7 +506,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<StockMovement>(entity =>
         {
-            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D102216E002CE");
+            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D10223163873F");
 
             entity.ToTable("StockMovement", tb => tb.HasTrigger("TR_StockMovement_NoUpdateDelete"));
 
@@ -457,7 +554,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Supplier>(entity =>
         {
-            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E86AD995FB");
+            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E820F0A96F");
 
             entity.ToTable("Supplier");
 
@@ -465,6 +562,15 @@ public partial class StockMindDbContext : DbContext
             entity.Property(e => e.Contact)
                 .HasMaxLength(100)
                 .HasColumnName("contact");
+            entity.Property(e => e.CreatedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.LeadTimeDays).HasColumnName("leadTimeDays");
             entity.Property(e => e.Name)
                 .HasMaxLength(200)
@@ -473,21 +579,22 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<UserAccount>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__UserAcco__B9BE370F6315347F");
+            entity.HasKey(e => e.UserId).HasName("PK__UserAcco__B9BE370FDD3CA790");
 
             entity.ToTable("UserAccount");
 
-            entity.HasIndex(e => e.PhoneNumber, "UQ__UserAcco__A1936A6B25F9E02E").IsUnique();
+            entity.HasIndex(e => e.PhoneNumber, "UQ__UserAcco__A1936A6BB5095AFD").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__UserAcco__AB6E616424A1BB8D").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__UserAcco__AB6E6164611F8F9B").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__UserAcco__F3DBC572618B6E45").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__UserAcco__F3DBC5722F3AC5F5").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
                 .HasColumnName("created_at");
+            entity.Property(e => e.Deleted).HasColumnName("deleted");
             entity.Property(e => e.Email)
                 .HasMaxLength(256)
                 .HasColumnName("email");
@@ -497,6 +604,10 @@ public partial class StockMindDbContext : DbContext
             entity.Property(e => e.IsActive)
                 .HasDefaultValue(true)
                 .HasColumnName("is_active");
+            entity.Property(e => e.LastModifiedAt)
+                .HasPrecision(0)
+                .HasDefaultValueSql("(sysdatetime())")
+                .HasColumnName("last_modified_at");
             entity.Property(e => e.PasswordHash)
                 .HasMaxLength(255)
                 .HasColumnName("password_hash");
@@ -513,14 +624,14 @@ public partial class StockMindDbContext : DbContext
                     r => r.HasOne<Role>().WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__UserRole__role_i__4316F928"),
+                        .HasConstraintName("FK__UserRole__role_i__47DBAE45"),
                     l => l.HasOne<UserAccount>().WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("FK__UserRole__user_i__4222D4EF"),
+                        .HasConstraintName("FK__UserRole__user_i__46E78A0C"),
                     j =>
                     {
-                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__6EDEA153A91D1CCD");
+                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__6EDEA153AA40925C");
                         j.ToTable("UserRole");
                         j.IndexerProperty<long>("UserId").HasColumnName("user_id");
                         j.IndexerProperty<long>("RoleId").HasColumnName("role_id");

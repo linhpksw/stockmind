@@ -13,6 +13,12 @@ public partial class Category
 
     public long? ParentCategoryId { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<Category> InverseParentCategory { get; set; } = new List<Category>();
 
     public virtual ICollection<MarkdownRule> MarkdownRules { get; set; } = new List<MarkdownRule>();

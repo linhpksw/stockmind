@@ -21,6 +21,12 @@ public partial class Grnitem
 
     public DateOnly? ExpiryDate { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual Grn Grn { get; set; } = null!;
 
     public virtual Lot? Lot { get; set; }

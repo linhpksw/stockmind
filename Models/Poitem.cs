@@ -17,6 +17,12 @@ public partial class Poitem
 
     public decimal UnitCost { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual Po Po { get; set; } = null!;
 
     public virtual Product Product { get; set; } = null!;

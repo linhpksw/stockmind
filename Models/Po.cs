@@ -13,6 +13,10 @@ public partial class Po
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<Grn> Grns { get; set; } = new List<Grn>();
 
     public virtual ICollection<Poitem> Poitems { get; set; } = new List<Poitem>();

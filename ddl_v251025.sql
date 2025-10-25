@@ -28,9 +28,12 @@ GO
    ========================================================== */
 
 CREATE TABLE dbo.Role (
-    role_id       BIGINT IDENTITY(1,1) PRIMARY KEY,
-    code          VARCHAR(40)   NOT NULL UNIQUE,
-    name          NVARCHAR(100) NOT NULL
+    role_id          BIGINT IDENTITY(1,1) PRIMARY KEY,
+    code             VARCHAR(40)   NOT NULL UNIQUE,
+    name             NVARCHAR(100) NOT NULL,
+    created_at       DATETIME2(0)  NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0)  NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT           NOT NULL DEFAULT(0)
 );
 
 CREATE TABLE dbo.UserAccount (
@@ -41,7 +44,9 @@ CREATE TABLE dbo.UserAccount (
     phone_number  NVARCHAR(10)  NULL UNIQUE,
     password_hash NVARCHAR(255) NULL,      -- or managed externally (IdP/SSO)
     is_active     BIT NOT NULL DEFAULT(1),
-    created_at    DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    created_at    DATETIME2(0)  NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted       BIT NOT NULL DEFAULT(0),
     CONSTRAINT CK_UserAccount_Phone_VN
         CHECK (
             phone_number IS NULL
@@ -62,18 +67,24 @@ CREATE TABLE dbo.UserRole (
 );
 
 CREATE TABLE dbo.Category (
-    category_id  BIGINT IDENTITY(1,1) PRIMARY KEY,
-    code         NVARCHAR(50) NOT NULL UNIQUE,
-    name         NVARCHAR(200) NOT NULL,
-    parent_category_id  BIGINT NULL,
+    category_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
+    code               NVARCHAR(50) NOT NULL UNIQUE,
+    name               NVARCHAR(200) NOT NULL,
+    parent_category_id BIGINT NULL,
+    created_at         DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at   DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted            BIT NOT NULL DEFAULT(0),
     FOREIGN KEY (parent_category_id) REFERENCES dbo.Category(category_id)
 );
 
 CREATE TABLE dbo.Supplier (
-    supplier_id   BIGINT IDENTITY(1,1) PRIMARY KEY,
-    name          NVARCHAR(200) NOT NULL,
-    contact       NVARCHAR(100) NULL,
-    leadTimeDays  INT NOT NULL DEFAULT(0) CHECK (leadTimeDays >= 0)
+    supplier_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
+    name             NVARCHAR(200) NOT NULL,
+    contact          NVARCHAR(100) NULL,
+    leadTimeDays     INT NOT NULL DEFAULT(0) CHECK (leadTimeDays >= 0),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0)
 );
 
 /* ==========================================================
@@ -92,8 +103,9 @@ CREATE TABLE dbo.Product (
     minStock       INT NOT NULL DEFAULT(0) CHECK (minStock >= 0),
     leadTimeDays   INT NOT NULL DEFAULT(0) CHECK (leadTimeDays >= 0),
     supplier_id    BIGINT NULL,
-    createdAt      DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    updatedAt      DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_Product_Category  FOREIGN KEY (category_id) REFERENCES dbo.Category(category_id),
     CONSTRAINT FK_Product_Supplier  FOREIGN KEY (supplier_id) REFERENCES dbo.Supplier(supplier_id),
     CONSTRAINT CK_Product_PerishableShelfLife
@@ -102,10 +114,12 @@ CREATE TABLE dbo.Product (
 );
 
 CREATE TABLE dbo.Inventory (
-    inventory_id  BIGINT IDENTITY(1,1) PRIMARY KEY,
-    product_id    BIGINT NOT NULL,
-    onHand        DECIMAL(19,4) NOT NULL DEFAULT(0),
-    updatedAt     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    inventory_id     BIGINT IDENTITY(1,1) PRIMARY KEY,
+    product_id       BIGINT NOT NULL,
+    onHand           DECIMAL(19,4) NOT NULL DEFAULT(0),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_Inv_Product  FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id)
 );
 
@@ -116,6 +130,9 @@ CREATE TABLE dbo.Lot (
     receivedAt  DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     expiryDate  DATE NULL,
     qtyOnHand   DECIMAL(19,4) NOT NULL DEFAULT(0),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT UQ_Lot_Product_LotCode UNIQUE (product_id, lotCode),
     CONSTRAINT FK_Lot_Product   FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id),
     CONSTRAINT CK_Lot_Positive  CHECK (qtyOnHand >= 0)
@@ -126,11 +143,12 @@ CREATE TABLE dbo.Lot (
    ========================================================== */
 
 CREATE TABLE dbo.PO (
-    po_id       BIGINT IDENTITY(1,1) PRIMARY KEY,
-    supplier_id BIGINT NOT NULL,
-    status      VARCHAR(16) NOT NULL DEFAULT 'OPEN' 
-                 CHECK (status IN ('OPEN','RECEIVED','CANCELLED')),
-    createdAt   DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    po_id            BIGINT IDENTITY(1,1) PRIMARY KEY,
+    supplier_id      BIGINT NOT NULL,
+    status           VARCHAR(16) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','RECEIVED','CANCELLED')),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_PO_Supplier FOREIGN KEY (supplier_id) REFERENCES dbo.Supplier(supplier_id)
 );
 
@@ -141,6 +159,9 @@ CREATE TABLE dbo.POItem (
     qtyOrdered   DECIMAL(19,4) NOT NULL CHECK (qtyOrdered > 0),
     expectedDate DATE NULL,
     unitCost     DECIMAL(19,4) NOT NULL CHECK (unitCost >= 0),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_POItem_PO      FOREIGN KEY (po_id)      REFERENCES dbo.PO(po_id),
     CONSTRAINT FK_POItem_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id)
 );
@@ -150,6 +171,9 @@ CREATE TABLE dbo.GRN (
     po_id       BIGINT NULL,
     receivedAt  DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     receiverId  BIGINT NULL,  -- UserAccount
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_GRN_PO       FOREIGN KEY (po_id)      REFERENCES dbo.PO(po_id),
     CONSTRAINT FK_GRN_Receiver FOREIGN KEY (receiverId) REFERENCES dbo.UserAccount(user_id)
 );
@@ -163,6 +187,9 @@ CREATE TABLE dbo.GRNItem (
     unitCost     DECIMAL(19,4) NOT NULL CHECK (unitCost >= 0),
     lotCode      NVARCHAR(64) NULL,
     expiryDate   DATE NULL,       -- REQUIRED for perishables (validated via trigger)
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_GRNItem_GRN     FOREIGN KEY (grn_id)     REFERENCES dbo.GRN(grn_id),
     CONSTRAINT FK_GRNItem_Product FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id),
     CONSTRAINT FK_GRNItem_Lot     FOREIGN KEY (lot_id)      REFERENCES dbo.Lot(lot_id)
@@ -173,8 +200,10 @@ CREATE TABLE dbo.GRNItem (
    ========================================================== */
 
 CREATE TABLE dbo.SalesOrder (
-    order_id   BIGINT IDENTITY(1,1) PRIMARY KEY,
-    createdAt  DATETIME2(0) NOT NULL DEFAULT SYSDATETIME()
+    order_id         BIGINT IDENTITY(1,1) PRIMARY KEY,
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0)
 );
 
 CREATE TABLE dbo.SalesOrderItem (
@@ -184,6 +213,9 @@ CREATE TABLE dbo.SalesOrderItem (
     qty                  DECIMAL(19,4) NOT NULL CHECK (qty > 0),
     unitPrice            DECIMAL(19,4) NOT NULL CHECK (unitPrice >= 0),
     appliedMarkdownPercent   DECIMAL(5,2) NULL CHECK (appliedMarkdownPercent BETWEEN 0 AND 1),
+    created_at           DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted              BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_SOI_Order   FOREIGN KEY (order_id)  REFERENCES dbo.SalesOrder(order_id),
     CONSTRAINT FK_SOI_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id)
 );
@@ -230,6 +262,9 @@ CREATE TABLE dbo.MarkdownRule (
     daysToExpiry     INT NOT NULL CHECK (daysToExpiry >= 0),
     discountPercent      DECIMAL(5,2) NOT NULL CHECK (discountPercent BETWEEN 0 AND 1),
     floorPercentOfCost   DECIMAL(5,2) NOT NULL CHECK (floorPercentOfCost BETWEEN 0 AND 1),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_MR_Category FOREIGN KEY (category_id) REFERENCES dbo.Category(category_id)
 );
 
@@ -245,6 +280,9 @@ CREATE TABLE dbo.ReplenishmentSuggestion (
     rop          DECIMAL(19,4) NOT NULL,
     suggestedQty DECIMAL(19,4) NOT NULL,
     computedAt   DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_Repl_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id)
 );
 

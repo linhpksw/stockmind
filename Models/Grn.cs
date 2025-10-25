@@ -13,6 +13,12 @@ public partial class Grn
 
     public long? ReceiverId { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<Grnitem> Grnitems { get; set; } = new List<Grnitem>();
 
     public virtual Po? Po { get; set; }

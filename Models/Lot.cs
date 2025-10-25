@@ -17,6 +17,12 @@ public partial class Lot
 
     public decimal QtyOnHand { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<Grnitem> Grnitems { get; set; } = new List<Grnitem>();
 
     public virtual Product Product { get; set; } = null!;

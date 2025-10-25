@@ -9,5 +9,9 @@ public partial class SalesOrder
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime LastModifiedAt { get; set; }
+
+    public bool Deleted { get; set; }
+
     public virtual ICollection<SalesOrderItem> SalesOrderItems { get; set; } = new List<SalesOrderItem>();
 }
