@@ -1,0 +1,53 @@
+# Build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userprefs
+
+# Visual Studio
+.vs/
+
+# Logs
+*.log
+
+# OS junk
+Thumbs.db
+ehthumbs.db
+Icon?
+.DS_Store
+
+# NuGet
+*.nupkg
+*.snupkg
+# Packages folder when using PackageReference is not needed, but keep for safety
+packages/
+
+# Node / Husky
+node_modules/
+
+# Rider / JetBrains
+.idea/
+
+# Generated configs
+launchSettings.json
+
+# Tooling caches
+.ionide/
+.vscode/
+
+# Coverage reports
+coverage/
+*.coverage
+*.coveragexml
+
+# Publish artifacts
+publish/
+
+# Temporary files
+~$*
+*.tmp
+*.temp

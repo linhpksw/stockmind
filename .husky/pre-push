@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -e
+
+if [ -n "$CI" ]; then
+  exit 0
+fi
+
+echo "husky - running dotnet tests before push"
+dotnet test

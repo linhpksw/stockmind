@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -e
+
+if [ -n "$CI" ]; then
+  exit 0
+fi
+
+echo "husky - running dotnet build before commit"
+dotnet restore
+dotnet build --no-restore

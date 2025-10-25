@@ -1,0 +1,6 @@
+@stockmind_HostAddress = http://localhost:5075
+
+GET {{stockmind_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
