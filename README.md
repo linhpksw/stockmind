@@ -12,7 +12,7 @@ Simple ASP.NET Core Web API for internal stock management with JWT authenticatio
 
 1. Clone the repository and open the folder:
    ```bash
-   git clone git@github.com:linhpksw/stockmind.git
+   git clone https://github.com/linhpksw/stockmind.git
    cd stockmind
    ```
 2. Create the database **StockMindDB** on SQL Server.
@@ -45,7 +45,7 @@ dotnet tool restore
 dotnet run --project stockmind.csproj
 ```
 
-Swagger UI is available in development at `https://localhost:8080/swagger`.
+Swagger UI is available in development at `http://localhost:8080/swagger/index.html`.
 
 ## 5. Git workflow guidelines
 
