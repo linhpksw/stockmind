@@ -17,7 +17,7 @@ namespace stockmind.Controllers {
         #region Create
 
         [HttpPost]
-        //[Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER")]
         public async Task<IActionResult> CreatePoAsync(
             [FromBody] CreatePoRequestDto request,
             CancellationToken cancellationToken) {

@@ -32,6 +32,7 @@ public PoService(
 
     public async Task<PoResponseDto> CreatePoAsync(CreatePoRequestDto request, CancellationToken cancellationToken) {
 
+        // add mock data for products
         //var mockProduct1 = new Product
         //{
         //    SkuCode = "SKU-MOCK-001",
