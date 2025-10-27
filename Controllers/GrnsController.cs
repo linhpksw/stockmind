@@ -20,8 +20,8 @@ namespace stockmind.Controllers {
             CancellationToken cancellationToken) {
             var grn = await _grnService.CreateGrnAsync(request, cancellationToken);
             return CreatedAtRoute(
-                routeName: "GetGrnById", 
-                routeValues: new { id = grn.Id }, 
+                routeName: "GetGrnById",
+                routeValues: new { id = grn.Id },
                 value: new ResponseModel<GrnResponseDto>(grn)
             );
         }
