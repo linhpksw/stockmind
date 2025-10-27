@@ -11,17 +11,19 @@ using stockmind.Repositories;
 
 namespace stockmind.Services;
 
-public class PoService {
+public class PoService
+{
     private readonly PoRepository _poRepository;
     private readonly SupplierRepository _supplierRepository;
     private readonly ProductRepository _productRepository;
     private readonly ILogger<PoService> _logger;
 
-public PoService(
-    PoRepository poRepository,
-    SupplierRepository supplierRepository,
-    ProductRepository productRepository,
-    ILogger<PoService> logger) {
+    public PoService(
+        PoRepository poRepository,
+        SupplierRepository supplierRepository,
+        ProductRepository productRepository,
+        ILogger<PoService> logger)
+    {
         _poRepository = poRepository;
         _supplierRepository = supplierRepository;
         _productRepository = productRepository;
@@ -30,7 +32,8 @@ public PoService(
 
     #region Create
 
-    public async Task<PoResponseDto> CreatePoAsync(CreatePoRequestDto request, CancellationToken cancellationToken) {
+    public async Task<PoResponseDto> CreatePoAsync(CreatePoRequestDto request, CancellationToken cancellationToken)
+    {
 
         // add mock data for products
         //var mockProduct1 = new Product
@@ -70,16 +73,20 @@ public PoService(
         //await _productRepository.AddAsync(mockProduct2, cancellationToken);
 
         var supplierExists = await _supplierRepository.ExistsByIdAsync(request.SupplierId, cancellationToken);
-        if (!supplierExists) {
+        if (!supplierExists)
+        {
             throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"SupplierId={request.SupplierId}" });
         }
 
-        foreach (var item in request.Items) {
-            if (!await _productRepository.ExistsByIdAsync(item.ProductId, cancellationToken)) {
+        foreach (var item in request.Items)
+        {
+            if (!await _productRepository.ExistsByIdAsync(item.ProductId, cancellationToken))
+            {
                 throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"ProductId={item.ProductId}" });
             }
 
-            if (item.Qty <= 0) {
+            if (item.Qty <= 0)
+            {
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "Quantity must be > 0" });
             }
         }
@@ -95,11 +102,12 @@ public PoService(
             Deleted = false
         };
 
-        foreach (var item in request.Items) {
+        foreach (var item in request.Items)
+        {
             po.Poitems.Add(new Poitem
             {
                 ProductId = item.ProductId,
-                QtyOrdered = item.Qty, 
+                QtyOrdered = item.Qty,
                 UnitCost = item.UnitCost,
                 ExpectedDate = DateOnly.FromDateTime(item.ExpectedDate),
                 CreatedAt = utcNow,
@@ -118,11 +126,13 @@ public PoService(
 
     #region Get by ID
 
-    public async Task<PoResponseDto> GetPoByIdAsync(long id, CancellationToken cancellationToken) {
+    public async Task<PoResponseDto> GetPoByIdAsync(long id, CancellationToken cancellationToken)
+    {
         var po = await _poRepository.FindByIdAsync(id, cancellationToken)
                  ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={id}" });
 
-        if (po.Deleted) {
+        if (po.Deleted)
+        {
             throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={id}" });
         }
 
@@ -133,7 +143,8 @@ public PoService(
 
     #region Helpers
 
-    private static PoResponseDto MapToResponse(Po po) {
+    private static PoResponseDto MapToResponse(Po po)
+    {
         return new PoResponseDto
         {
             Id = $"PO-{po.PoId:D4}",

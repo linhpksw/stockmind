@@ -4,13 +4,16 @@ using stockmind.Commons.Responses;
 using stockmind.DTOs.Pos;
 using stockmind.Services;
 
-namespace stockmind.Controllers {
+namespace stockmind.Controllers
+{
     [ApiController]
     [Route("api/[controller]")]
-    public class PosController : Controller {
+    public class PosController : Controller
+    {
         private readonly PoService _poService;
 
-        public PosController(PoService poService) {
+        public PosController(PoService poService)
+        {
             _poService = poService;
         }
 
@@ -20,7 +23,8 @@ namespace stockmind.Controllers {
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER")]
         public async Task<IActionResult> CreatePoAsync(
             [FromBody] CreatePoRequestDto request,
-            CancellationToken cancellationToken) {
+            CancellationToken cancellationToken)
+        {
             var po = await _poService.CreatePoAsync(request, cancellationToken);
 
             return CreatedAtRoute(
@@ -38,7 +42,8 @@ namespace stockmind.Controllers {
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER")]
         public async Task<IActionResult> GetPoByIdAsync(
             [FromRoute] long id,
-            CancellationToken cancellationToken) {
+            CancellationToken cancellationToken)
+        {
             var po = await _poService.GetPoByIdAsync(id, cancellationToken);
             return Ok(new ResponseModel<PoResponseDto>(po));
         }
