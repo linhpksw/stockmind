@@ -6,8 +6,10 @@ using stockmind.DTOs.Suppliers;
 using stockmind.Models;
 using stockmind.Repositories;
 
-namespace stockmind.Services {
-    public class GrnService {
+namespace stockmind.Services
+{
+    public class GrnService
+    {
         private readonly GrnRepository _grnRepository;
         private readonly ProductRepository _productRepository;
         private readonly PoRepository _poRepository;
@@ -23,7 +25,8 @@ namespace stockmind.Services {
             InventoryRepository inventoryRepository,
             LotRepository lotRepository,
             StockMovementRepository stockMovementRepository,
-            ILogger<GrnService> logger) {
+            ILogger<GrnService> logger)
+        {
             _grnRepository = grnRepository;
             _productRepository = productRepository;
             _poRepository = poRepository;
@@ -35,7 +38,8 @@ namespace stockmind.Services {
 
         #region Get by id
 
-        public async Task<GrnResponseDto?> GetByIdAsync(long id, CancellationToken cancellationToken) {
+        public async Task<GrnResponseDto?> GetByIdAsync(long id, CancellationToken cancellationToken)
+        {
             var grn = await _grnRepository.GetByIdAsync(id, cancellationToken);
 
             if (grn == null)
@@ -60,7 +64,8 @@ namespace stockmind.Services {
 
         #endregion
 
-        public async Task<GrnResponseDto> CreateGrnAsync(CreateGrnRequestDto request, CancellationToken cancellationToken) {
+        public async Task<GrnResponseDto> CreateGrnAsync(CreateGrnRequestDto request, CancellationToken cancellationToken)
+        {
             var po = await _poRepository.FindByIdAsync(request.PoId, cancellationToken)
                      ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={request.PoId}" });
 
@@ -76,17 +81,20 @@ namespace stockmind.Services {
 
             var stockMovements = new List<StockMovementDto>();
 
-            foreach (var item in request.Items) {
+            foreach (var item in request.Items)
+            {
                 var product = await _productRepository.FindByIdAsync(item.ProductId, cancellationToken)
                               ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"ProductId={item.ProductId}" });
 
-                if (product.IsPerishable && !item.ExpiryDate.HasValue) {
+                if (product.IsPerishable && !item.ExpiryDate.HasValue)
+                {
                     throw new BizException(ErrorCode4xx.InvalidInput, new[] { "ExpiryDate required for perishable product." });
                 }
 
                 // 🔹 Step 1: Update or create lot
                 var lot = await _lotRepository.FindByProductIdAndLotCodeAsync(product.ProductId, item.LotCode, cancellationToken);
-                if (lot == null) {
+                if (lot == null)
+                {
                     lot = new Lot
                     {
                         ProductId = product.ProductId,
@@ -99,7 +107,9 @@ namespace stockmind.Services {
                         Deleted = false
                     };
                     await _lotRepository.AddAsync(lot, cancellationToken);
-                } else {
+                }
+                else
+                {
                     lot.QtyOnHand += item.QtyReceived;
                     lot.LastModifiedAt = utcNow;
                     await _lotRepository.UpdateAsync(lot, cancellationToken);
@@ -107,7 +117,8 @@ namespace stockmind.Services {
 
                 // 🔹 Step 2: Update or create inventory
                 var inventory = await _inventoryRepository.GetByProductIdAsync(product.ProductId, cancellationToken);
-                if (inventory == null) {
+                if (inventory == null)
+                {
                     inventory = new Inventory
                     {
                         ProductId = product.ProductId,
@@ -117,7 +128,9 @@ namespace stockmind.Services {
                         Deleted = false
                     };
                     await _inventoryRepository.AddAsync(inventory, cancellationToken);
-                } else {
+                }
+                else
+                {
                     inventory.OnHand += item.QtyReceived;
                     inventory.LastModifiedAt = utcNow;
                     await _inventoryRepository.UpdateAsync(inventory, cancellationToken);

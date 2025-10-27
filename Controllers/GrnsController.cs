@@ -4,12 +4,15 @@ using stockmind.Commons.Responses;
 using stockmind.DTOs.Grns;
 using stockmind.Services;
 
-namespace stockmind.Controllers {
+namespace stockmind.Controllers
+{
     [ApiController]
     [Route("api/[controller]")]
-    public class GrnsController : Controller {
+    public class GrnsController : Controller
+    {
         private readonly GrnService _grnService;
-        public GrnsController(GrnService grnService) {
+        public GrnsController(GrnService grnService)
+        {
             _grnService = grnService;
         }
 
@@ -17,7 +20,8 @@ namespace stockmind.Controllers {
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
         public async Task<IActionResult> CreateGrnAsync(
             [FromBody] CreateGrnRequestDto request,
-            CancellationToken cancellationToken) {
+            CancellationToken cancellationToken)
+        {
             var grn = await _grnService.CreateGrnAsync(request, cancellationToken);
             return CreatedAtRoute(
                 routeName: "GetGrnById",
@@ -28,7 +32,8 @@ namespace stockmind.Controllers {
 
         [HttpGet("{id}", Name = "GetGrnById")]
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
-        public async Task<IActionResult> GetGrnById(long id, CancellationToken cancellationToken) {
+        public async Task<IActionResult> GetGrnById(long id, CancellationToken cancellationToken)
+        {
             var grn = await _grnService.GetByIdAsync(id, cancellationToken);
 
             if (grn == null)

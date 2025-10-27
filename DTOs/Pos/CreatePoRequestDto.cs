@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
-namespace stockmind.DTOs.Pos {
-    public class CreatePoRequestDto{
+namespace stockmind.DTOs.Pos
+{
+    public class CreatePoRequestDto
+    {
         [Required]
         public long SupplierId { get; set; }
 
@@ -10,7 +12,8 @@ namespace stockmind.DTOs.Pos {
         [MinLength(1)]
         public List<PoItemDto> Items { get; set; }
     }
-    public class PoItemDto {
+    public class PoItemDto
+    {
         [Required]
         public long ProductId { get; set; }
 
