@@ -103,6 +103,9 @@ namespace stockmind
             builder.Services.AddScoped<SupplierRepository>();
             builder.Services.AddScoped<SupplierService>();
             builder.Services.AddScoped<DataSeeder>();
+            builder.Services.AddScoped<PoService>();
+            builder.Services.AddScoped<PoRepository>();
+            builder.Services.AddScoped<ProductRepository>();
 
             var app = builder.Build();
 

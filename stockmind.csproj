@@ -26,11 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="Commons\" />
-    <Folder Include="DTOs\" />
-    <Folder Include="Services\" />
-    <Folder Include="Repositories\" />
   </ItemGroup>
 
 </Project>
