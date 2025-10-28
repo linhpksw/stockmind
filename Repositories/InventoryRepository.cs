@@ -6,31 +6,61 @@ namespace stockmind.Repositories
 {
     public class InventoryRepository
     {
-        private readonly StockMindDbContext _context;
-
-        public InventoryRepository(StockMindDbContext context)
+        private readonly StockMindDbContext _dbContext;
+        public InventoryRepository(StockMindDbContext dbContext)
         {
-            _context = context;
+            _dbContext = dbContext;
         }
 
-        public async Task<Inventory?> GetByProductIdAsync(long productId, CancellationToken cancellationToken)
+        public async Task<Inventory> AddAsync(Inventory inventory, CancellationToken cancellationToken)
         {
-            return await _context.Inventories
-                .Where(i => i.ProductId == productId && !i.Deleted)
-                .FirstOrDefaultAsync(cancellationToken);
+            await _dbContext.Inventories.AddAsync(inventory, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return inventory;
         }
 
-        public async Task AddAsync(Inventory inventory, CancellationToken cancellationToken)
+        public Task<Inventory?> GetByIdAsync(long inventoryId, CancellationToken cancellationToken)
         {
-            await _context.Inventories.AddAsync(inventory, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+            return _dbContext.Inventories
+                .FirstOrDefaultAsync(s => s.InventoryId == inventoryId && !s.Deleted, cancellationToken);
         }
 
-        public async Task UpdateAsync(Inventory inventory, CancellationToken cancellationToken)
+        public Task<Inventory?> GetByProductIdAsync(long productId, CancellationToken cancellationToken)
         {
-            _context.Inventories.Update(inventory);
-            await _context.SaveChangesAsync(cancellationToken);
+            return _dbContext.Inventories
+                .FirstOrDefaultAsync(s => s.ProductId == productId && !s.Deleted, cancellationToken);
         }
+
+        public async Task<Inventory> UpdateAsync(Inventory inventory, CancellationToken cancellationToken)
+        {
+            _dbContext.Inventories.Update(inventory);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return inventory;
+        }
+
+        public async Task<PageResult<Inventory>> ListAsync(
+            IQueryable<Inventory> baseQuery,
+            int pageNum,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            var skip = (pageNum - 1) * pageSize;
+            var total = await baseQuery.LongCountAsync(cancellationToken);
+            var items = await baseQuery
+                .Skip(skip)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return new PageResult<Inventory>(total, items);
+        }
+
+        public IQueryable<Inventory> Query()
+        {
+            return _dbContext.Inventories.AsQueryable();
+        }
+
+        public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);
 
         public async Task<List<Inventory>> GetAllAsync(CancellationToken cancellationToken)
         {
@@ -38,14 +68,6 @@ namespace stockmind.Repositories
                 .Where(i => !i.Deleted)
                 .Include(i => i.Product)
                 .ToListAsync(cancellationToken);
-        }
-
-        public async Task<Inventory?> GetByIdAsync(long id, CancellationToken cancellationToken)
-        {
-            return await _context.Inventories
-                .Include(i => i.Product)
-                .FirstOrDefaultAsync(i => i.InventoryId == id && !i.Deleted, cancellationToken);
-        }
 
         public async Task SoftDeleteAsync(long id, CancellationToken cancellationToken)
         {
