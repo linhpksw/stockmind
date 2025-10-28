@@ -1,4 +1,5 @@
-﻿using stockmind.Commons.Errors;
+﻿using stockmind.Commons.Attributes;
+using stockmind.Commons.Errors;
 using stockmind.Commons.Exceptions;
 using stockmind.Commons.Helpers;
 using stockmind.DTOs.Grns;
@@ -63,7 +64,7 @@ namespace stockmind.Services
         }
 
         #endregion
-
+        [Transactional]
         public async Task<GrnResponseDto> CreateGrnAsync(CreateGrnRequestDto request, CancellationToken cancellationToken)
         {
             var po = await _poRepository.FindByIdAsync(request.PoId, cancellationToken)

@@ -14,6 +14,7 @@ using stockmind.Services;
 using stockmind.Middlewares;
 using System;
 using System.Text;
+using AspectCore.Extensions.DependencyInjection;
 
 namespace stockmind
 {
@@ -111,6 +112,8 @@ namespace stockmind
             builder.Services.AddScoped<InventoryRepository>();
             builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<StockMovementRepository>();
+
+            builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
 
             var app = builder.Build();
 
