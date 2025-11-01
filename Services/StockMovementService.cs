@@ -66,10 +66,10 @@ namespace stockmind.Services
             return updated;
         }
 
-        private async Task ValidateUpdateAsync(StockMovement request, long stockMovementId, CancellationToken cancellationToken)
-        {
+        //private async Task ValidateUpdateAsync(StockMovement request, long stockMovementId, CancellationToken cancellationToken)
+        //{
 
-        }
+        //}
 
         private static StockMovement ApplyUpdates(StockMovement stockMovement, StockMovement request)
         {
