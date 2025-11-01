@@ -62,10 +62,10 @@ namespace stockmind.Services
             return updated;
         }
 
-        private async Task ValidateUpdateAsync(Lot request, long lotId, CancellationToken cancellationToken)
-        {
+        //private async Task ValidateUpdateAsync(Lot request, long lotId, CancellationToken cancellationToken)
+        //{
 
-        }
+        //}
 
         private static Lot ApplyUpdates(Lot lot, Lot request)
         {
