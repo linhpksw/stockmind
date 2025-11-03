@@ -64,20 +64,21 @@ namespace stockmind.Repositories
 
         public async Task<List<Inventory>> GetAllAsync(CancellationToken cancellationToken)
         {
-            return await _context.Inventories
+            return await _dbContext.Inventories
                 .Where(i => !i.Deleted)
                 .Include(i => i.Product)
                 .ToListAsync(cancellationToken);
+        }
 
         public async Task SoftDeleteAsync(long id, CancellationToken cancellationToken)
         {
-            var inventory = await _context.Inventories.FirstOrDefaultAsync(i => i.InventoryId == id, cancellationToken);
+            var inventory = await _dbContext.Inventories.FirstOrDefaultAsync(i => i.InventoryId == id, cancellationToken);
             if (inventory != null)
             {
                 inventory.Deleted = true;
                 inventory.LastModifiedAt = DateTime.UtcNow;
-                _context.Inventories.Update(inventory);
-                await _context.SaveChangesAsync(cancellationToken);
+                _dbContext.Inventories.Update(inventory);
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
         }
     }

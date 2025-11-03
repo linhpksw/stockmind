@@ -64,7 +64,7 @@ namespace stockmind.Repositories
 
         public async Task<Lot?> FindByProductIdAndLotCodeAsync(long productId, string lotCode, CancellationToken cancellationToken)
         {
-            return await _context.Lots
+            return await _dbContext.Lots
                 .FirstOrDefaultAsync(
                     l => l.ProductId == productId &&
                          l.LotCode == lotCode &&

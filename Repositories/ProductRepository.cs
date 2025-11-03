@@ -70,7 +70,7 @@ namespace stockmind.Repositories
 
         public async Task<bool> ExistsByIdAsync(long productId, CancellationToken cancellationToken)
         {
-            return await _context.Products.AnyAsync(p => p.ProductId == productId && !p.Deleted, cancellationToken);
+            return await _dbContext.Products.AnyAsync(p => p.ProductId == productId && !p.Deleted, cancellationToken);
         }
 
         #endregion
@@ -79,7 +79,7 @@ namespace stockmind.Repositories
 
         public async Task<List<Product>> GetAllAsync(CancellationToken cancellationToken)
         {
-            return await _context.Products
+            return await _dbContext.Products
                 .Where(p => !p.Deleted)
                 .Include(p => p.Category)
                 .Include(p => p.Supplier)
@@ -88,7 +88,7 @@ namespace stockmind.Repositories
 
         public async Task<Product?> FindByIdAsync(long id, CancellationToken cancellationToken)
         {
-            return await _context.Products
+            return await _dbContext.Products
                 .Include(p => p.Category)
                 .Include(p => p.Supplier)
                 .FirstOrDefaultAsync(p => p.ProductId == id && !p.Deleted, cancellationToken);
@@ -96,12 +96,12 @@ namespace stockmind.Repositories
 
         public async Task DeleteAsync(long id, CancellationToken cancellationToken)
         {
-            var product = await _context.Products.FindAsync(new object[] { id }, cancellationToken);
+            var product = await _dbContext.Products.FindAsync(new object[] { id }, cancellationToken);
             if (product != null)
             {
                 product.Deleted = true;
                 product.LastModifiedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync(cancellationToken);
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
         }
 
