@@ -1,37 +1,77 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using stockmind.Models;
 
 namespace stockmind.Repositories
 {
     public class StockMovementRepository
     {
-        private readonly StockMindDbContext _context;
 
-        public StockMovementRepository(StockMindDbContext context)
+        private readonly StockMindDbContext _dbContext;
+
+        public StockMovementRepository(StockMindDbContext dbContext)
         {
-            _context = context;
+            _dbContext = dbContext;
         }
 
-        public async Task AddAsync(StockMovement movement, CancellationToken cancellationToken)
+        public async Task<StockMovement> AddAsync(StockMovement stockMovement, CancellationToken cancellationToken)
         {
-            await _context.StockMovements.AddAsync(movement, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+            await _dbContext.StockMovements.AddAsync(stockMovement, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return stockMovement;
         }
+
+        public Task<StockMovement?> GetByIdAsync(long stockMovementId, CancellationToken cancellationToken)
+        {
+            return _dbContext.StockMovements
+                .FirstOrDefaultAsync(s => s.MovementId == stockMovementId, cancellationToken);
+        }
+
+        public async Task<StockMovement> UpdateAsync(StockMovement stockMovement, CancellationToken cancellationToken)
+        {
+            _dbContext.StockMovements.Update(stockMovement);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return stockMovement;
+        }
+
+        public async Task<PageResult<StockMovement>> ListAsync(
+            IQueryable<StockMovement> baseQuery,
+            int pageNum,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            var skip = (pageNum - 1) * pageSize;
+            var total = await baseQuery.LongCountAsync(cancellationToken);
+            var items = await baseQuery
+                .Skip(skip)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return new PageResult<StockMovement>(total, items);
+        }
+
+        public IQueryable<StockMovement> Query()
+        {
+            return _dbContext.StockMovements.AsQueryable();
+        }
+
+        public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);
 
         public async Task<List<StockMovement>> GetRecentSalesAsync(DateTime fromDate, CancellationToken cancellationToken)
         {
-            return await _context.StockMovements
+            return await _dbContext.StockMovements
                 .Where(sm => sm.Type == "OUT_SALE" && sm.CreatedAt >= fromDate)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<List<StockMovement>> GetSalesMovementsAsync(DateTime sinceDate, CancellationToken cancellationToken)
         {
-            return await _context.StockMovements
+            return await _dbContext.StockMovements
                 .Include(sm => sm.Product)
                 .Where(sm => sm.Type == "OUT_SALE" && sm.CreatedAt >= sinceDate)
                 .OrderByDescending(sm => sm.CreatedAt)
                 .ToListAsync(cancellationToken);
         }
+
     }
 }
