@@ -1,3 +1,4 @@
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +24,6 @@ namespace stockmind
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // --- Database configuration ---
             var connectionString = builder.Configuration.GetConnectionString("MyCnn");
             builder.Services.AddDbContext<StockMindDbContext>(opt =>
                 opt.UseSqlServer(connectionString));
@@ -31,7 +31,6 @@ namespace stockmind
             builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
             builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Query", LogLevel.Warning);
 
-            // --- JWT configuration ---
             var jwtSection = builder.Configuration.GetSection("Jwt");
             builder.Services.Configure<JwtSettings>(jwtSection);
             var jwtSettings = jwtSection.Get<JwtSettings>()
@@ -39,14 +38,14 @@ namespace stockmind
 
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey));
 
-            // --- Filters and Controllers ---
+            // Add services to the container.
+
             builder.Services.AddScoped<ApiExceptionFilter>();
             builder.Services.AddControllers(options =>
             {
                 options.Filters.Add<ApiExceptionFilter>();
             });
-
-            // --- Swagger configuration ---
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
@@ -77,7 +76,6 @@ namespace stockmind
                 options.OperationFilter<SwaggerSecurityRequirementsOperationFilter>();
             });
 
-            // --- Authentication & Authorization ---
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -114,27 +112,20 @@ namespace stockmind
             builder.Services.AddScoped<InventoryRepository>();
             builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<StockMovementRepository>();
-
-            builder.Services.AddScoped<InventoryService>();
-            builder.Services.AddScoped<ProductService>();
-            builder.Services.AddScoped<LotService>();
-            builder.Services.AddScoped<StockMovementService>();
             builder.Services.AddScoped<ReplenishmentService>();
 
-            // --- AspectCore AOP integration ---
             builder.Services.ConfigureDynamicProxy();
             builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
 
             var app = builder.Build();
 
-            // --- Database seeding ---
             using (var scope = app.Services.CreateScope())
             {
                 var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
                 seeder.SeedAsync().GetAwaiter().GetResult();
             }
 
-            // --- Middleware pipeline ---
+            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -147,6 +138,7 @@ namespace stockmind
 
             app.UseAuthentication();
             app.UseAuthorization();
+
 
             app.MapControllers();
 
