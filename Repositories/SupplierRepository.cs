@@ -64,11 +64,6 @@ public class SupplierRepository
         return new PageResult<Supplier>(total, items);
     }
 
-    public async Task<bool> ExistsByIdAsync(long supplierId, CancellationToken cancellationToken)
-    {
-        return await _dbContext.Suppliers.AnyAsync(s => s.SupplierId == supplierId && !s.Deleted, cancellationToken);
-    }
-
     public IQueryable<Supplier> Query()
     {
         return _dbContext.Suppliers.AsQueryable();

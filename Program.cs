@@ -1,4 +1,5 @@
 
+using Application.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,13 +9,12 @@ using Microsoft.OpenApi.Models;
 using stockmind.Commons.Configurations;
 using stockmind.Commons.Swagger;
 using stockmind.Filters;
+using stockmind.Middlewares;
 using stockmind.Models;
 using stockmind.Repositories;
 using stockmind.Services;
-using stockmind.Middlewares;
 using System;
 using System.Text;
-using AspectCore.Extensions.DependencyInjection;
 
 namespace stockmind
 {
@@ -104,42 +104,7 @@ namespace stockmind
             builder.Services.AddScoped<SupplierRepository>();
             builder.Services.AddScoped<SupplierService>();
             builder.Services.AddScoped<DataSeeder>();
-            builder.Services.AddScoped<PoService>();
-            builder.Services.AddScoped<PoRepository>();
-            builder.Services.AddScoped<ProductRepository>();
-            builder.Services.AddScoped<GrnRepository>();
-            builder.Services.AddScoped<GrnService>();
-            builder.Services.AddScoped<InventoryRepository>();
-            builder.Services.AddScoped<LotRepository>();
-            builder.Services.AddScoped<StockMovementRepository>();
-
-            builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
-
-            builder.Services.AddScoped<InventoryService>();
-            builder.Services.AddScoped<InventoryRepository>();
-
-            builder.Services.AddScoped<ProductService>();
-            builder.Services.AddScoped<ProductRepository>();
-
-            builder.Services.AddScoped<LotService>();
-            builder.Services.AddScoped<LotRepository>();
-
-            builder.Services.AddScoped<StockMovementService>();
-            builder.Services.AddScoped<StockMovementRepository>();
-
-
-            builder.Services.AddScoped<InventoryService>();
-            builder.Services.AddScoped<InventoryRepository>();
-
-            builder.Services.AddScoped<ProductService>();
-            builder.Services.AddScoped<ProductRepository>();
-
-            builder.Services.AddScoped<LotService>();
-            builder.Services.AddScoped<LotRepository>();
-
-            builder.Services.AddScoped<StockMovementService>();
-            builder.Services.AddScoped<StockMovementRepository>();
-
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
             var app = builder.Build();
 
