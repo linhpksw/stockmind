@@ -65,7 +65,7 @@ namespace stockmind.Services
 
         #endregion
         [Transactional]
-        public async Task<GrnResponseDto> CreateGrnAsync(CreateGrnRequestDto request, CancellationToken cancellationToken)
+        public virtual async Task<GrnResponseDto> CreateGrnAsync(CreateGrnRequestDto request, CancellationToken cancellationToken)
         {
             var po = await _poRepository.FindByIdAsync(request.PoId, cancellationToken)
                      ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={request.PoId}" });
@@ -115,6 +115,10 @@ namespace stockmind.Services
                     lot.LastModifiedAt = utcNow;
                     await _lotRepository.UpdateAsync(lot, cancellationToken);
                 }
+
+                //if (item.ProductId == 2) {
+                //    throw new Exception("💥 Simulated error during GRN creation");
+                //}
 
                 // 🔹 Step 2: Update or create inventory
                 var inventory = await _inventoryRepository.GetByProductIdAsync(product.ProductId, cancellationToken);

@@ -10,6 +10,7 @@ namespace stockmind.Commons.Attributes
         public override async Task Invoke(AspectContext context, AspectDelegate next)
         {
             var dbContext = context.ServiceProvider.GetService<StockMindDbContext>();
+            Console.WriteLine($"[Transactional] DbContext Hash: {dbContext?.GetHashCode()}");
             if (dbContext == null)
             {
                 await next(context);

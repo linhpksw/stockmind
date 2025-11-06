@@ -25,5 +25,13 @@ namespace stockmind.Repositories
                 .Include(p => p.Poitems)
                 .FirstOrDefaultAsync(p => p.PoId == id, cancellationToken);
         }
+
+        public async Task<List<Poitem>> GetOpenOrderItemsAsync(CancellationToken cancellationToken) {
+            return await _context.Poitems
+                .Include(poi => poi.Product)
+                .Include(poi => poi.Po)
+                .Where(poi => poi.Po.Status == "OPEN")
+                .ToListAsync(cancellationToken);
+        }
     }
 }

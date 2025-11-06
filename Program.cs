@@ -112,6 +112,10 @@ namespace stockmind
             builder.Services.AddScoped<InventoryRepository>();
             builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<StockMovementRepository>();
+            builder.Services.AddScoped<ReplenishmentService>();
+
+            builder.Services.ConfigureDynamicProxy();
+
 
             builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
 
