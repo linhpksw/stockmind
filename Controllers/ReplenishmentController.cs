@@ -6,17 +6,21 @@ using stockmind.Models;
 using stockmind.Services;
 
 
-namespace stockmind.Controllers {
+namespace stockmind.Controllers
+{
     [ApiController]
     [Route("replenishments")]
-    public class ReplenishmentController : Controller {
+    public class ReplenishmentController : Controller
+    {
         private readonly ReplenishmentService _service;
-        public ReplenishmentController(ReplenishmentService service) {
+        public ReplenishmentController(ReplenishmentService service)
+        {
             _service = service;
         }
 
         [HttpGet("suggestions")]
-        public async Task<IActionResult> GetSuggestionsAsync(CancellationToken cancellationToken) {
+        public async Task<IActionResult> GetSuggestionsAsync(CancellationToken cancellationToken)
+        {
             var result = await _service.GetSuggestionsAsync(cancellationToken);
             return Ok(new ResponseModel<List<ReplenishmentSuggestionDto>>(result));
         }

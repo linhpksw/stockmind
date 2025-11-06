@@ -26,7 +26,8 @@ namespace stockmind.Repositories
                 .FirstOrDefaultAsync(p => p.PoId == id, cancellationToken);
         }
 
-        public async Task<List<Poitem>> GetOpenOrderItemsAsync(CancellationToken cancellationToken) {
+        public async Task<List<Poitem>> GetOpenOrderItemsAsync(CancellationToken cancellationToken)
+        {
             return await _context.Poitems
                 .Include(poi => poi.Product)
                 .Include(poi => poi.Po)

@@ -1,8 +1,10 @@
 ﻿using stockmind.DTOs.ReplenishmentSuggestion;
 using stockmind.Repositories;
 
-namespace stockmind.Services {
-    public class ReplenishmentService {
+namespace stockmind.Services
+{
+    public class ReplenishmentService
+    {
         private readonly ProductRepository _productRepository;
         private readonly InventoryRepository _inventoryRepository;
         private readonly PoRepository _poRepository;
@@ -12,14 +14,16 @@ namespace stockmind.Services {
             ProductRepository productRepository,
             InventoryRepository inventoryRepository,
             PoRepository poRepository,
-            StockMovementRepository stockRepository) {
+            StockMovementRepository stockRepository)
+        {
             _productRepository = productRepository;
             _inventoryRepository = inventoryRepository;
             _poRepository = poRepository;
             _stockRepository = stockRepository;
         }
 
-        public async Task<List<ReplenishmentSuggestionDto>> GetSuggestionsAsync(CancellationToken cancellationToken) {
+        public async Task<List<ReplenishmentSuggestionDto>> GetSuggestionsAsync(CancellationToken cancellationToken)
+        {
             const double Z = 1.28;
             var today = DateTime.UtcNow;
             var since = today.AddDays(-30);
@@ -33,7 +37,7 @@ namespace stockmind.Services {
             // Sales stats: avg & sigma
             var salesStats = movements
                 .GroupBy(m => new { m.ProductId, Date = m.CreatedAt.Date })
-                .Select(g => new { g.Key.ProductId, DailySales = g.Sum(x => x.Qty) }) 
+                .Select(g => new { g.Key.ProductId, DailySales = g.Sum(x => x.Qty) })
                 .GroupBy(x => x.ProductId)
                 .Select(g =>
                 {

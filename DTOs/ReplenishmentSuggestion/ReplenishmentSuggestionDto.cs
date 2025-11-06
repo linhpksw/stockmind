@@ -1,5 +1,7 @@
-﻿namespace stockmind.DTOs.ReplenishmentSuggestion {
-    public class ReplenishmentSuggestionDto {
+﻿namespace stockmind.DTOs.ReplenishmentSuggestion
+{
+    public class ReplenishmentSuggestionDto
+    {
         public long ProductId { get; set; }
         public decimal OnHand { get; set; }
         public decimal OnOrder { get; set; }
