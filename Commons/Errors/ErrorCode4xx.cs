@@ -9,4 +9,5 @@ public static class ErrorCode4xx
     public static readonly IResponseCode DataAlreadyExists = new ResponseCode("409000", "Resource already exists: {0}");
     public static readonly IResponseCode MissingRequiredParameter = new ResponseCode("400100", "Missing required parameter: {0}");
     public static readonly IResponseCode FileTooLarge = new ResponseCode("400200", "Uploaded file is too large");
+    public static readonly IResponseCode InventoryLotMismatch = new ResponseCode("422000", "Inventory and Lot quantities do not match");
 }

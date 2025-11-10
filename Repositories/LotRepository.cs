@@ -30,6 +30,15 @@ namespace stockmind.Repositories
             return _dbContext.Lots
                 .FirstOrDefaultAsync(s => s.LotId == lotId && s.ProductId == productId, cancellationToken);
         }
+        public async Task<IReadOnlyList<Lot>> GetLotsByProductAsync(long productId, CancellationToken ct = default)
+        {
+            return await _dbContext.Lots
+                .AsNoTracking()
+                .Where(l => l.ProductId == productId)
+                .OrderBy(l => l.ExpiryDate) // FEFO for perishables
+                .ThenBy(l => l.ReceivedAt)
+                .ToListAsync(ct);
+        }
 
         public async Task<Lot> UpdateAsync(Lot lot, CancellationToken cancellationToken)
         {

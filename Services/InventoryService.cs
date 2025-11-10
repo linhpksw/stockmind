@@ -1,9 +1,12 @@
-﻿using stockmind.Commons.Errors;
+﻿using Microsoft.EntityFrameworkCore;
+using stockmind.Commons.Attributes;
+using stockmind.Commons.Errors;
 using stockmind.Commons.Exceptions;
 using stockmind.Commons.Helpers;
 using stockmind.DTOs.Inventory;
 using stockmind.Models;
 using stockmind.Repositories;
+using stockmind.Utils;
 
 namespace stockmind.Services
 {
@@ -14,20 +17,24 @@ namespace stockmind.Services
         private readonly ProductService _productService;
         private readonly LotService _lotService;
         private readonly StockMovementService _movementService;
+        private readonly IMapperUtil _mapper;
         public InventoryService(
             InventoryRepository inventoryRepository,
             ILogger<InventoryService> logger,
             ProductService productService,
             LotService lotService,
-            StockMovementService movementService)
+            StockMovementService movementService,
+            IMapperUtil mapper)
         {
             _inventoryRepository = inventoryRepository;
             _logger = logger;
             _productService = productService;
             _lotService = lotService;
             _movementService = movementService;
+            _mapper = mapper;
         }
 
+        [Transactional]
         public async Task<InventoryAdjustmentResponseDto> AdjustInventoryAsync(InventoryAdjustmentRequestDto req, CancellationToken cancellationToken)
         {
             // ✅ Step 1: Validate input
@@ -88,6 +95,51 @@ namespace stockmind.Services
             };
         }
 
+        public async Task<InventoryLedgerDto> GetStockLedgerAsync(string productId, CancellationToken ct)
+        {
+            // Defensive validation
+            if (string.IsNullOrWhiteSpace(productId))
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "productId is required." });
+
+            _logger.LogInformation("Fetching stock ledger for product {ProductId}", productId);
+
+            // Load inventory summary (onHand), lots, and recent movements in repository layer
+            var inventory = await GetInventoryByProductIdAsync(productId, false, ct);
+
+            var lots = await _lotService.GetLotsByProductAsync(productId, false, ct);
+            var recentMovements = await _movementService.GetRecentMovementsAsync(productId, count: 50, false, ct); // N configurable; here 50
+
+            // Map to DTOs
+            var lotDtos = lots.Select(l => _mapper.MapToLotDto(l)).ToList();
+            var movementDtos = recentMovements.Select(m => _mapper.MapToMovementDto(m)).ToList();
+
+            // Business rule check: sum(lots.qtyOnHand) must equal onHand
+            var sumLots = lotDtos.Sum(l => l.QtyOnHand);
+            if (sumLots != inventory.OnHand)
+            {
+                _logger.LogWarning("Data inconsistency detected for product {ProductId}: onHand={OnHand} sumLots={SumLots}",
+                    productId, inventory.OnHand, sumLots);
+
+                // Throw a specific business/data exception so caller can react.
+                throw new BizException(ErrorCode4xx.InventoryLotMismatch,
+                    new[] { $"Inventory mismatch for product {productId}: onHand={inventory.OnHand} vs sum(lots)={sumLots}." });
+
+            }
+
+
+            var result = new InventoryLedgerDto(
+                ProductId: productId,
+                OnHand: inventory.OnHand,
+                Lots: lotDtos,
+                RecentMovements: movementDtos
+            );
+
+            _logger.LogInformation("Successfully built ledger for {ProductId} (lots={Count}, movements={MvCount})",
+                productId, lotDtos.Count, movementDtos.Count);
+
+            return result;
+        }
+
         #region Get by id
 
         public async Task<Inventory> GetInventoryByIdAsync(string publicId, bool includeDeleted, CancellationToken cancellationToken)
@@ -128,6 +180,7 @@ namespace stockmind.Services
 
         #region Update
 
+        [Transactional]
         public async Task<Inventory> UpdateInventoryAsync(string publicId, Inventory request, CancellationToken cancellationToken)
         {
             if (request is null)
