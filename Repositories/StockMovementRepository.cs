@@ -73,5 +73,14 @@ namespace stockmind.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<IReadOnlyList<StockMovement>> GetRecentMovementsAsync(long productId, int count, CancellationToken ct = default)
+        {
+            return await _dbContext.StockMovements
+                .AsNoTracking()
+                .Where(m => m.ProductId == productId)
+                .OrderByDescending(m => m.CreatedAt)
+                .Take(count)
+                .ToListAsync(ct);
+        }
     }
 }

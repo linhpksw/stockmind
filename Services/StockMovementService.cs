@@ -1,4 +1,5 @@
-﻿using stockmind.Commons.Errors;
+﻿using stockmind.Commons.Attributes;
+using stockmind.Commons.Errors;
 using stockmind.Commons.Exceptions;
 using stockmind.Commons.Helpers;
 using stockmind.DTOs.Suppliers;
@@ -17,8 +18,24 @@ namespace stockmind.Services
             _logger = logger;
         }
 
+        public async Task<IReadOnlyList<StockMovement>> GetRecentMovementsAsync(string rawProductId, int count, bool includeDeleted, CancellationToken cancellationToken)
+        {
+            var productId = ProductCodeHelper.FromPublicId(rawProductId);
+
+            var movements = await _stockMovementRepository.GetRecentMovementsAsync(productId, count, cancellationToken)
+                             ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { rawProductId });
+
+            if (movements.Count == 0 && !includeDeleted)
+            {
+                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { rawProductId });
+            }
+
+            return movements;
+        }
+
         #region Create
 
+        [Transactional]
         public async Task<StockMovement> CreateStockMovementAsync(StockMovement request, CancellationToken cancellationToken)
         {
             ValidateCreate(request);

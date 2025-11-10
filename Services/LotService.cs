@@ -1,4 +1,5 @@
-﻿using stockmind.Commons.Errors;
+﻿using stockmind.Commons.Attributes;
+using stockmind.Commons.Errors;
 using stockmind.Commons.Exceptions;
 using stockmind.Commons.Helpers;
 using stockmind.Models;
@@ -33,11 +34,26 @@ namespace stockmind.Services
 
             return lot;
         }
+        public async Task<IReadOnlyList<Lot>> GetLotsByProductAsync(string rawProductId, bool includeDeleted, CancellationToken cancellationToken)
+        {
+            var productId = ProductCodeHelper.FromPublicId(rawProductId);
+
+            var lots = await _lotRepository.GetLotsByProductAsync(productId, cancellationToken)
+                             ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { rawProductId });
+
+            if (lots.Count == 0 && !includeDeleted)
+            {
+                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { rawProductId });
+            }
+
+            return lots;
+        }
 
         #endregion
 
         #region Update
 
+        [Transactional]
         public async Task<Lot> UpdateLotAsync(string publicId, Lot request, CancellationToken cancellationToken)
         {
             if (request is null)

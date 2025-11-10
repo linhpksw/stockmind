@@ -1,4 +1,5 @@
 
+using AspectCore.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,13 +9,13 @@ using Microsoft.OpenApi.Models;
 using stockmind.Commons.Configurations;
 using stockmind.Commons.Swagger;
 using stockmind.Filters;
+using stockmind.Middlewares;
 using stockmind.Models;
 using stockmind.Repositories;
 using stockmind.Services;
-using stockmind.Middlewares;
+using stockmind.Utils;
 using System;
 using System.Text;
-using AspectCore.Extensions.DependencyInjection;
 
 namespace stockmind
 {
@@ -106,11 +107,8 @@ namespace stockmind
             builder.Services.AddScoped<DataSeeder>();
             builder.Services.AddScoped<PoService>();
             builder.Services.AddScoped<PoRepository>();
-            builder.Services.AddScoped<ProductRepository>();
             builder.Services.AddScoped<GrnRepository>();
             builder.Services.AddScoped<GrnService>();
-            builder.Services.AddScoped<InventoryRepository>();
-            builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<StockMovementRepository>();
             builder.Services.AddScoped<StockMovementService>();
             builder.Services.AddScoped<ReplenishmentService>();
@@ -121,6 +119,21 @@ namespace stockmind
 
             builder.Services.ConfigureDynamicProxy();
             builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
+
+            builder.Services.AddScoped<InventoryService>();
+            builder.Services.AddScoped<InventoryRepository>();
+
+            builder.Services.AddScoped<ProductService>();
+            builder.Services.AddScoped<ProductRepository>();
+
+            builder.Services.AddScoped<LotService>();
+            builder.Services.AddScoped<LotRepository>();
+
+            builder.Services.AddSingleton<IMapperUtil, MapperUtil>();
+            builder.Services.Configure<AlertsOptions>(builder.Configuration.GetSection("Alerts"));
+            builder.Services.AddScoped<AlertsService>();
+            builder.Services.AddScoped<AlertsRepository>();
+
 
             var app = builder.Build();
 
