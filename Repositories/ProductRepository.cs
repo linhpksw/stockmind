@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using stockmind.Models;
 
 namespace stockmind.Repositories
@@ -24,6 +24,8 @@ namespace stockmind.Repositories
 
         public async Task<Product> AddAsync(Product product, CancellationToken cancellationToken)
         {
+            product.CreatedAt = DateTime.UtcNow;
+            product.LastModifiedAt = DateTime.UtcNow;
             await _dbContext.Products.AddAsync(product, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             return product;
@@ -37,6 +39,7 @@ namespace stockmind.Repositories
 
         public async Task<Product> UpdateAsync(Product product, CancellationToken cancellationToken)
         {
+            product.LastModifiedAt = DateTime.UtcNow;
             _dbContext.Products.Update(product);
             await _dbContext.SaveChangesAsync(cancellationToken);
             return product;

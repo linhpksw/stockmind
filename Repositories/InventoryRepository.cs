@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+using System;
+using Microsoft.EntityFrameworkCore;
 using stockmind.Models;
 
 namespace stockmind.Repositories
 {
     public class InventoryRepository
     {
+
         private readonly StockMindDbContext _dbContext;
         public InventoryRepository(StockMindDbContext dbContext)
         {
@@ -21,6 +23,7 @@ namespace stockmind.Repositories
         public Task<Inventory?> GetByIdAsync(long inventoryId, CancellationToken cancellationToken)
         {
             return _dbContext.Inventories
+                .Include(i => i.Product)
                 .FirstOrDefaultAsync(s => s.InventoryId == inventoryId && !s.Deleted, cancellationToken);
         }
 
@@ -68,7 +71,6 @@ namespace stockmind.Repositories
                 .Include(i => i.Product)
                 .ToListAsync(cancellationToken);
         }
-
         public async Task SoftDeleteAsync(long id, CancellationToken cancellationToken)
         {
             var inventory = await _dbContext.Inventories.FirstOrDefaultAsync(i => i.InventoryId == id, cancellationToken);

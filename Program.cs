@@ -112,34 +112,10 @@ namespace stockmind
             builder.Services.AddScoped<InventoryRepository>();
             builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<StockMovementRepository>();
+            builder.Services.AddScoped<ReplenishmentService>();
 
+            builder.Services.ConfigureDynamicProxy();
             builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
-
-            builder.Services.AddScoped<InventoryService>();
-            builder.Services.AddScoped<InventoryRepository>();
-
-            builder.Services.AddScoped<ProductService>();
-            builder.Services.AddScoped<ProductRepository>();
-
-            builder.Services.AddScoped<LotService>();
-            builder.Services.AddScoped<LotRepository>();
-
-            builder.Services.AddScoped<StockMovementService>();
-            builder.Services.AddScoped<StockMovementRepository>();
-
-
-            builder.Services.AddScoped<InventoryService>();
-            builder.Services.AddScoped<InventoryRepository>();
-
-            builder.Services.AddScoped<ProductService>();
-            builder.Services.AddScoped<ProductRepository>();
-
-            builder.Services.AddScoped<LotService>();
-            builder.Services.AddScoped<LotRepository>();
-
-            builder.Services.AddScoped<StockMovementService>();
-            builder.Services.AddScoped<StockMovementRepository>();
-
 
             var app = builder.Build();
 

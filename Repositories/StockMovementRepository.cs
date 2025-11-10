@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using stockmind.Models;
 
 namespace stockmind.Repositories
 {
     public class StockMovementRepository
     {
+
         private readonly StockMindDbContext _dbContext;
 
         public StockMovementRepository(StockMindDbContext dbContext)
@@ -55,5 +56,22 @@ namespace stockmind.Repositories
         }
 
         public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);
+
+        public async Task<List<StockMovement>> GetRecentSalesAsync(DateTime fromDate, CancellationToken cancellationToken)
+        {
+            return await _dbContext.StockMovements
+                .Where(sm => sm.Type == "OUT_SALE" && sm.CreatedAt >= fromDate)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<StockMovement>> GetSalesMovementsAsync(DateTime sinceDate, CancellationToken cancellationToken)
+        {
+            return await _dbContext.StockMovements
+                .Include(sm => sm.Product)
+                .Where(sm => sm.Type == "OUT_SALE" && sm.CreatedAt >= sinceDate)
+                .OrderByDescending(sm => sm.CreatedAt)
+                .ToListAsync(cancellationToken);
+        }
+
     }
 }
