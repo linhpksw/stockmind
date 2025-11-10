@@ -25,6 +25,8 @@ namespace stockmind
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            const string FrontendCorsPolicy = "FrontendCorsPolicy";
+
             var connectionString = builder.Configuration.GetConnectionString("MyCnn");
             builder.Services.AddDbContext<StockMindDbContext>(opt =>
                 opt.UseSqlServer(connectionString));
@@ -40,6 +42,27 @@ namespace stockmind
             var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey));
 
             // Add services to the container.
+
+            var allowedOrigins = builder.Configuration
+                .GetSection("Cors:AllowedOrigins")
+                .Get<string[]>() ?? Array.Empty<string>();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(FrontendCorsPolicy, policy =>
+                {
+                    if (allowedOrigins.Length == 0)
+                    {
+                        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                    }
+                    else
+                    {
+                        policy.WithOrigins(allowedOrigins)
+                            .AllowAnyHeader()
+                            .AllowAnyMethod();
+                    }
+                });
+            });
 
             builder.Services.AddScoped<ApiExceptionFilter>();
             builder.Services.AddControllers(options =>
@@ -153,6 +176,8 @@ namespace stockmind
             app.UseHttpsRedirection();
 
             app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
+            app.UseCors(FrontendCorsPolicy);
 
             app.UseAuthentication();
             app.UseAuthorization();
