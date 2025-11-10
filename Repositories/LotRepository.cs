@@ -72,5 +72,39 @@ namespace stockmind.Repositories
                     cancellationToken
                 );
         }
+
+        public async Task<Lot?> GetLotWithHistoryAsync(long productId, string lotCode, CancellationToken cancellationToken)
+        {
+            return await _dbContext.Lots
+                .Include(l => l.Grnitems)
+                .FirstOrDefaultAsync(
+                    l => l.ProductId == productId &&
+                         l.LotCode == lotCode &&
+                         !l.Deleted,
+                    cancellationToken);
+        }
+
+        public async Task<List<Lot>> GetPerishableLotsExpiringWithinAsync(int daysThreshold, CancellationToken cancellationToken)
+        {
+            if (daysThreshold <= 0)
+            {
+                return new List<Lot>();
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var latestDate = today.AddDays(daysThreshold);
+
+            return await _dbContext.Lots
+                .AsNoTracking()
+                .Include(l => l.Product)
+                    .ThenInclude(p => p.Category)
+                .Include(l => l.Grnitems)
+                .Where(l => !l.Deleted)
+                .Where(l => !l.Product.Deleted)
+                .Where(l => l.Product.IsPerishable)
+                .Where(l => l.QtyOnHand > 0)
+                .Where(l => l.ExpiryDate.HasValue && l.ExpiryDate.Value >= today && l.ExpiryDate.Value <= latestDate)
+                .ToListAsync(cancellationToken);
+        }
     }
 }

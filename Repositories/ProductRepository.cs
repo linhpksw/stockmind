@@ -97,6 +97,22 @@ namespace stockmind.Repositories
                 .FirstOrDefaultAsync(p => p.ProductId == id && !p.Deleted, cancellationToken);
         }
 
+        public async Task<Product?> FindBySkuAsync(string skuCode, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(skuCode))
+            {
+                return null;
+            }
+
+            var normalized = skuCode.Trim();
+
+            return await _dbContext.Products
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(
+                    p => p.SkuCode == normalized && !p.Deleted,
+                    cancellationToken);
+        }
+
         public async Task DeleteAsync(long id, CancellationToken cancellationToken)
         {
             var product = await _dbContext.Products.FindAsync(new object[] { id }, cancellationToken);
