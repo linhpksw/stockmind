@@ -92,7 +92,6 @@ namespace stockmind.Services
                     throw new BizException(ErrorCode4xx.InvalidInput, new[] { "ExpiryDate required for perishable product." });
                 }
 
-                // 🔹 Step 1: Update or create lot
                 var lot = await _lotRepository.FindByProductIdAndLotCodeAsync(product.ProductId, item.LotCode, cancellationToken);
                 if (lot == null)
                 {
@@ -116,11 +115,7 @@ namespace stockmind.Services
                     await _lotRepository.UpdateAsync(lot, cancellationToken);
                 }
 
-                //if (item.ProductId == 2) {
-                //    throw new Exception("💥 Simulated error during GRN creation");
-                //}
 
-                // 🔹 Step 2: Update or create inventory
                 var inventory = await _inventoryRepository.GetByProductIdAsync(product.ProductId, cancellationToken);
                 if (inventory == null)
                 {
@@ -141,7 +136,6 @@ namespace stockmind.Services
                     await _inventoryRepository.UpdateAsync(inventory, cancellationToken);
                 }
 
-                // 🔹 Step 3: Add GRN item
                 var grnItem = new Grnitem
                 {
                     ProductId = product.ProductId,
@@ -156,7 +150,6 @@ namespace stockmind.Services
                 };
                 grn.Grnitems.Add(grnItem);
 
-                // 🔹 Step 4: Log stock movement
                 var movement = new StockMovement
                 {
                     ProductId = product.ProductId,

@@ -231,7 +231,7 @@ CREATE TABLE dbo.StockMovement (
     lot_id      BIGINT NULL,
     qty         DECIMAL(19,4) NOT NULL CHECK (qty <> 0),   -- +IN / -OUT
     type        VARCHAR(24) NOT NULL
-                 CHECK (type IN ('IN_RECEIPT','OUT_SALE','ADJUSTMENT','OUT_WASTE','IN_ADJUSTMENT')),
+                 CHECK (type IN ('IN_RECEIPT','OUT_SALE','OUT_ADJUSTMENT','OUT_WASTE','IN_ADJUSTMENT')),
     refType     VARCHAR(24) NULL,     -- e.g., 'GRN','ORDER','ADJUSTMENT','PO','WASTE'
     refId       BIGINT NULL,          -- points to the ref record id
     actorId     BIGINT NULL,          -- UserAccount who caused it
