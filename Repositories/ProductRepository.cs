@@ -17,8 +17,20 @@ namespace stockmind.Repositories
             var normalized = name.Trim();
             return _dbContext.Products
                 .AsNoTracking()
-                .Where(s => s.Name == normalized)
-                .Where(s => !excludeId.HasValue || s.SupplierId != excludeId.Value)
+                .Where(p => !p.Deleted)
+                .Where(p => p.Name == normalized)
+                .Where(p => !excludeId.HasValue || p.ProductId != excludeId.Value)
+                .AnyAsync(cancellationToken);
+        }
+
+        public Task<bool> ExistsBySkuAsync(string skuCode, long? excludeId, CancellationToken cancellationToken)
+        {
+            var normalized = skuCode.Trim();
+            return _dbContext.Products
+                .AsNoTracking()
+                .Where(p => !p.Deleted)
+                .Where(p => p.SkuCode == normalized)
+                .Where(p => !excludeId.HasValue || p.ProductId != excludeId.Value)
                 .AnyAsync(cancellationToken);
         }
 

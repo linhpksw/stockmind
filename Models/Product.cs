@@ -50,4 +50,6 @@ public partial class Product
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 
     public virtual Supplier? Supplier { get; set; }
+
+    public virtual ICollection<ProductAuditLog> ProductAuditLogs { get; set; } = new List<ProductAuditLog>();
 }

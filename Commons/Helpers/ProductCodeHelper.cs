@@ -1,6 +1,7 @@
-﻿using stockmind.Commons.Errors;
-using stockmind.Commons.Exceptions;
+using System;
 using System.Globalization;
+using stockmind.Commons.Errors;
+using stockmind.Commons.Exceptions;
 
 namespace stockmind.Commons.Helpers
 {
@@ -21,6 +22,16 @@ namespace stockmind.Commons.Helpers
             }
 
             return value;
+        }
+
+        public static string ToPublicId(long productId)
+        {
+            if (productId <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(productId));
+            }
+
+            return productId.ToString(CultureInfo.InvariantCulture);
         }
     }
 }
