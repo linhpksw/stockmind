@@ -1,4 +1,3 @@
-
 using AspectCore.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +23,6 @@ namespace stockmind
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
             const string FrontendCorsPolicy = "FrontendCorsPolicy";
 
             var connectionString = builder.Configuration.GetConnectionString("MyCnn");
@@ -46,21 +44,21 @@ namespace stockmind
             var allowedOrigins = builder.Configuration
                 .GetSection("Cors:AllowedOrigins")
                 .Get<string[]>() ?? Array.Empty<string>();
-
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy(FrontendCorsPolicy, policy =>
                 {
-                    if (allowedOrigins.Length == 0)
+                    if (allowedOrigins.Length > 0)
                     {
-                        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                        policy.WithOrigins(allowedOrigins);
                     }
                     else
                     {
-                        policy.WithOrigins(allowedOrigins)
-                            .AllowAnyHeader()
-                            .AllowAnyMethod();
+                        policy.AllowAnyOrigin();
                     }
+
+                    policy.AllowAnyHeader()
+                          .AllowAnyMethod();
                 });
             });
 
@@ -122,6 +120,8 @@ namespace stockmind
 
             builder.Services.AddAuthorization();
 
+            builder.Services.AddHttpContextAccessor();
+
             builder.Services.AddScoped<AuthRepository>();
             builder.Services.AddScoped<AuthService>();
             builder.Services.AddScoped<JwtTokenService>();
@@ -148,6 +148,8 @@ namespace stockmind
 
             builder.Services.AddScoped<ProductService>();
             builder.Services.AddScoped<ProductRepository>();
+            builder.Services.AddScoped<CategoryRepository>();
+            builder.Services.AddScoped<ProductAuditLogRepository>();
 
             builder.Services.AddScoped<LotService>();
             builder.Services.AddScoped<LotRepository>();

@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using stockmind.Commons.Responses;
+using stockmind.DTOs.Alert;
 using stockmind.Services;
 
 namespace stockmind.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/alerts")]
     [ApiController]
     public class AlertsController : ControllerBase
     {
@@ -22,18 +24,14 @@ namespace stockmind.Controllers
         {
             try
             {
-                var res = await _service.GetAlertsAsync(ct);
-                return Ok(res);
+                _logger.LogInformation("GET api/alerts triggered.");
+                var alerts = await _service.GetAlertsAsync(ct);
+                return Ok(new ResponseModel<AlertsAggregateDto>(alerts));
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException oce)
             {
-                _logger.LogWarning("GetAlerts canceled by client.");
+                _logger.LogWarning(oce, "GetAlerts canceled by client.");
                 return StatusCode(StatusCodes.Status499ClientClosedRequest);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while computing alerts");
-                return Problem(detail: ex.Message, statusCode: 500);
             }
         }
     }
