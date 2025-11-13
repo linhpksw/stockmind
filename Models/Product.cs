@@ -21,6 +21,8 @@ public partial class Product
 
     public decimal Price { get; set; }
 
+    public string? MediaUrl { get; set; }
+
     public int MinStock { get; set; }
 
     public int LeadTimeDays { get; set; }
@@ -50,6 +52,4 @@ public partial class Product
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 
     public virtual Supplier? Supplier { get; set; }
-
-    public virtual ICollection<ProductAuditLog> ProductAuditLogs { get; set; } = new List<ProductAuditLog>();
 }

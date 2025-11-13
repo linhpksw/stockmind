@@ -22,6 +22,9 @@ namespace stockmind.Utils
                 MinStock = product.MinStock,
                 LeadTimeDays = product.LeadTimeDays,
                 SupplierId = product.SupplierId.HasValue ? SupplierCodeHelper.ToPublicId(product.SupplierId.Value) : null,
+                MediaUrl = product.MediaUrl,
+                CategoryName = product.Category?.Name,
+                BrandName = product.Supplier?.Name,
                 CreatedAt = product.CreatedAt,
                 LastModifiedAt = product.LastModifiedAt,
                 UpdatedAt = product.LastModifiedAt

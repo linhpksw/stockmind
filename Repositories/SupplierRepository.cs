@@ -47,6 +47,14 @@ public class SupplierRepository
         return supplier;
     }
 
+    public Task<Supplier?> GetByNameAsync(string name, CancellationToken cancellationToken)
+    {
+        var normalized = name.Trim();
+        return _dbContext.Suppliers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Name == normalized && !s.Deleted, cancellationToken);
+    }
+
     public async Task<PageResult<Supplier>> ListAsync(
         IQueryable<Supplier> baseQuery,
         int pageNum,
@@ -72,6 +80,17 @@ public class SupplierRepository
     public IQueryable<Supplier> Query()
     {
         return _dbContext.Suppliers.AsQueryable();
+    }
+
+    public Task<List<Supplier>> ListAllAsync(bool includeDeleted, CancellationToken cancellationToken)
+    {
+        var query = _dbContext.Suppliers.AsQueryable();
+        if (!includeDeleted)
+        {
+            query = query.Where(s => !s.Deleted);
+        }
+
+        return query.ToListAsync(cancellationToken);
     }
 
     public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);

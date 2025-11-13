@@ -21,5 +21,7 @@ namespace stockmind.DTOs.Product
         public int LeadTimeDays { get; set; }
 
         public string? SupplierId { get; set; }
+
+        public string? MediaUrl { get; set; }
     }
 }

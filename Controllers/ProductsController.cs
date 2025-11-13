@@ -56,5 +56,15 @@ namespace stockmind.Controllers
             return Ok(new ResponseModel<ProductResponseDto>(product));
         }
 
+        [HttpPost("import")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
+        public async Task<IActionResult> ImportProductsAsync(
+            [FromBody] ImportProductsRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var result = await _productService.ImportProductsAsync(request, cancellationToken);
+            return Ok(new ResponseModel<ImportProductsResponseDto>(result));
+        }
+
     }
 }

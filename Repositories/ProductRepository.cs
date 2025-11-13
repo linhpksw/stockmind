@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using stockmind.Models;
 
@@ -46,6 +51,8 @@ namespace stockmind.Repositories
         public Task<Product?> GetByIdAsync(long productId, CancellationToken cancellationToken)
         {
             return _dbContext.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
                 .FirstOrDefaultAsync(s => s.ProductId == productId, cancellationToken);
         }
 
@@ -77,6 +84,31 @@ namespace stockmind.Repositories
         public IQueryable<Product> Query()
         {
             return _dbContext.Products.AsQueryable();
+        }
+
+        public Task<List<Product>> ListAllTrackedAsync(bool includeDeleted, CancellationToken cancellationToken)
+        {
+            var query = _dbContext.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .AsQueryable();
+
+            if (!includeDeleted)
+            {
+                query = query.Where(p => !p.Deleted);
+            }
+
+            return query.ToListAsync(cancellationToken);
+        }
+
+        public Task AddRangeAsync(IEnumerable<Product> products, CancellationToken cancellationToken)
+        {
+            return _dbContext.Products.AddRangeAsync(products, cancellationToken);
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken)
+        {
+            return _dbContext.SaveChangesAsync(cancellationToken);
         }
 
         public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);

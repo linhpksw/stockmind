@@ -26,6 +26,12 @@ namespace stockmind.DTOs.Product
 
         public string? SupplierId { get; set; }
 
+        public string? MediaUrl { get; set; }
+
+        public string? CategoryName { get; set; }
+
+        public string? BrandName { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public DateTime LastModifiedAt { get; set; }

@@ -1,8 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Security.Claims;
-using System.Text.Json;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using stockmind.Commons.Attributes;
 using stockmind.Commons.Errors;
@@ -17,31 +16,20 @@ namespace stockmind.Services
 {
     public class ProductService
     {
-        private static readonly JsonSerializerOptions AuditSerializerOptions = new(JsonSerializerDefaults.Web)
-        {
-            WriteIndented = false
-        };
-
         private readonly ProductRepository _productRepository;
         private readonly CategoryRepository _categoryRepository;
         private readonly SupplierRepository _supplierRepository;
-        private readonly ProductAuditLogRepository _productAuditLogRepository;
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger<ProductService> _logger;
 
         public ProductService(
             ProductRepository productRepository,
             CategoryRepository categoryRepository,
             SupplierRepository supplierRepository,
-            ProductAuditLogRepository productAuditLogRepository,
-            IHttpContextAccessor httpContextAccessor,
             ILogger<ProductService> logger)
         {
             _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
             _categoryRepository = categoryRepository ?? throw new ArgumentNullException(nameof(categoryRepository));
             _supplierRepository = supplierRepository ?? throw new ArgumentNullException(nameof(supplierRepository));
-            _productAuditLogRepository = productAuditLogRepository ?? throw new ArgumentNullException(nameof(productAuditLogRepository));
-            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -87,11 +75,11 @@ namespace stockmind.Services
                 MinStock = request.MinStock,
                 LeadTimeDays = request.LeadTimeDays,
                 SupplierId = supplierId,
+                MediaUrl = NormalizeMediaUrl(request.MediaUrl),
                 Deleted = false
             };
 
             await _productRepository.AddAsync(product, cancellationToken);
-            await WriteAuditLogAsync(product.ProductId, "CREATE", CaptureSnapshot(product), cancellationToken);
 
             _logger.LogInformation("Created product {Sku} with id {ProductId}", product.SkuCode, product.ProductId);
             return ProductMapper.ToResponse(product);
@@ -121,8 +109,6 @@ namespace stockmind.Services
                 throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { publicId });
             }
 
-            var before = CaptureSnapshot(product);
-
             var normalizedSku = request.SkuCode.Trim();
             if (!string.Equals(product.SkuCode, normalizedSku, StringComparison.OrdinalIgnoreCase))
             {
@@ -151,11 +137,9 @@ namespace stockmind.Services
             product.MinStock = request.MinStock;
             product.LeadTimeDays = request.LeadTimeDays;
             product.SupplierId = await ResolveSupplierIdAsync(request.SupplierId, cancellationToken);
+            product.MediaUrl = NormalizeMediaUrl(request.MediaUrl);
 
             await _productRepository.UpdateAsync(product, cancellationToken);
-
-            var after = CaptureSnapshot(product);
-            await WriteAuditLogAsync(product.ProductId, "UPDATE", new { Before = before, After = after }, cancellationToken);
 
             _logger.LogInformation("Updated product {ProductId}", product.ProductId);
             return ProductMapper.ToResponse(product);
@@ -200,6 +184,234 @@ namespace stockmind.Services
             }
 
             return products.Select(ProductMapper.ToResponse).ToList();
+        }
+
+        #endregion
+
+
+        #region Import
+
+        public async Task<ImportProductsResponseDto> ImportProductsAsync(
+            ImportProductsRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var response = new ImportProductsResponseDto();
+            if (request.Rows == null || request.Rows.Count == 0)
+            {
+                return response;
+            }
+
+            var trackedProducts = await _productRepository.ListAllTrackedAsync(includeDeleted: true, cancellationToken);
+            var productsBySku = trackedProducts
+                .Where(p => !string.IsNullOrWhiteSpace(p.SkuCode))
+                .ToDictionary(p => p.SkuCode.Trim(), p => p, StringComparer.OrdinalIgnoreCase);
+            var productsById = trackedProducts.ToDictionary(p => p.ProductId);
+
+            var categories = await _categoryRepository.ListAllTrackedAsync(includeDeleted: false, cancellationToken);
+            var categoriesByName = categories
+                .Where(c => !string.IsNullOrWhiteSpace(c.Name))
+                .ToDictionary(c => c.Name.Trim(), c => c, StringComparer.OrdinalIgnoreCase);
+            var categoriesByCode = categories
+                .Where(c => !string.IsNullOrWhiteSpace(c.Code))
+                .ToDictionary(c => c.Code.Trim(), c => c, StringComparer.OrdinalIgnoreCase);
+            var categoriesById = categories.ToDictionary(c => c.CategoryId);
+
+            var suppliers = await _supplierRepository.ListAllAsync(includeDeleted: false, cancellationToken);
+            var suppliersByName = suppliers
+                .Where(s => !string.IsNullOrWhiteSpace(s.Name))
+                .ToDictionary(s => s.Name.Trim(), s => s, StringComparer.OrdinalIgnoreCase);
+
+            var now = DateTime.UtcNow;
+            var newProducts = new List<Product>();
+
+            foreach (var row in request.Rows)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var normalizedSku = row?.SkuCode?.Trim();
+                var normalizedName = row?.Name?.Trim();
+                var normalizedUom = row?.Uom?.Trim();
+
+                if (string.IsNullOrWhiteSpace(normalizedSku) ||
+                    string.IsNullOrWhiteSpace(normalizedName) ||
+                    string.IsNullOrWhiteSpace(normalizedUom) ||
+                    row?.Price is null)
+                {
+                    response.SkippedInvalid += 1;
+                    continue;
+                }
+
+                var price = row.Price.Value;
+                if (price < 0)
+                {
+                    response.SkippedInvalid += 1;
+                    continue;
+                }
+
+                long? categoryId = null;
+                if (!string.IsNullOrWhiteSpace(row.CategoryName))
+                {
+                    if (!TryResolveCategoryId(
+                            row.CategoryName,
+                            categoriesByName,
+                            categoriesByCode,
+                            categoriesById,
+                            out var resolvedCategoryId))
+                    {
+                        response.SkippedMissingCategory += 1;
+                        continue;
+                    }
+
+                    categoryId = resolvedCategoryId;
+                }
+
+                long? supplierId = null;
+                if (!string.IsNullOrWhiteSpace(row.BrandName))
+                {
+                    var normalizedBrand = row.BrandName.Trim();
+                    if (suppliersByName.TryGetValue(normalizedBrand, out var supplier))
+                    {
+                        supplierId = supplier.SupplierId;
+                    }
+                    else
+                    {
+                        response.SkippedMissingSupplier += 1;
+                        continue;
+                    }
+                }
+
+                var product = ResolveProduct(row, normalizedSku, productsById, productsBySku);
+                var normalizedUomUpper = normalizedUom!.ToUpperInvariant();
+                var mediaUrl = NormalizeMediaUrl(row.MediaUrl);
+                var targetIsPerishable = row.IsPerishable ?? product?.IsPerishable ?? false;
+                var targetShelfLife = targetIsPerishable
+                    ? row.ShelfLifeDays ?? product?.ShelfLifeDays
+                    : null;
+                var targetMinStock = row.MinStock ?? product?.MinStock ?? 0;
+                var targetLeadTime = row.LeadTimeDays ?? product?.LeadTimeDays ?? 0;
+
+                if (product is null)
+                {
+                    var newProduct = new Product
+                    {
+                        SkuCode = normalizedSku!,
+                        Name = normalizedName!,
+                        CategoryId = categoryId,
+                        IsPerishable = targetIsPerishable,
+                        ShelfLifeDays = targetShelfLife,
+                        Uom = normalizedUomUpper,
+                        Price = price,
+                        MediaUrl = mediaUrl,
+                        MinStock = targetMinStock,
+                        LeadTimeDays = targetLeadTime,
+                        SupplierId = supplierId,
+                        Deleted = false,
+                        CreatedAt = now,
+                        LastModifiedAt = now
+                    };
+
+                    newProducts.Add(newProduct);
+                    productsBySku[normalizedSku!] = newProduct;
+                    response.Created += 1;
+                    continue;
+                }
+
+                var changed = false;
+
+                if (!string.Equals(product.Name, normalizedName, StringComparison.Ordinal))
+                {
+                    product.Name = normalizedName!;
+                    changed = true;
+                }
+
+                if (!string.Equals(product.Uom, normalizedUomUpper, StringComparison.Ordinal))
+                {
+                    product.Uom = normalizedUomUpper;
+                    changed = true;
+                }
+
+                if (product.Price != price)
+                {
+                    product.Price = price;
+                    changed = true;
+                }
+
+                if (product.CategoryId != categoryId)
+                {
+                    product.CategoryId = categoryId;
+                    changed = true;
+                }
+
+                if (product.SupplierId != supplierId)
+                {
+                    product.SupplierId = supplierId;
+                    changed = true;
+                }
+
+                if (product.IsPerishable != targetIsPerishable)
+                {
+                    product.IsPerishable = targetIsPerishable;
+                    changed = true;
+                }
+
+                if (product.ShelfLifeDays != targetShelfLife)
+                {
+                    product.ShelfLifeDays = targetShelfLife;
+                    changed = true;
+                }
+
+                if (product.MinStock != targetMinStock)
+                {
+                    product.MinStock = targetMinStock;
+                    changed = true;
+                }
+
+                if (product.LeadTimeDays != targetLeadTime)
+                {
+                    product.LeadTimeDays = targetLeadTime;
+                    changed = true;
+                }
+
+                if (!string.Equals(product.MediaUrl, mediaUrl, StringComparison.Ordinal))
+                {
+                    product.MediaUrl = mediaUrl;
+                    changed = true;
+                }
+
+                if (product.Deleted)
+                {
+                    product.Deleted = false;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    product.LastModifiedAt = now;
+                    response.Updated += 1;
+                }
+            }
+
+            if (newProducts.Count > 0)
+            {
+                await _productRepository.AddRangeAsync(newProducts, cancellationToken);
+            }
+
+            await _productRepository.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Product import completed: {Created} created, {Updated} updated, {Invalid} invalid, {MissingCategory} missing category, {MissingSupplier} missing supplier.",
+                response.Created,
+                response.Updated,
+                response.SkippedInvalid,
+                response.SkippedMissingCategory,
+                response.SkippedMissingSupplier);
+
+            return response;
         }
 
         #endregion
@@ -287,21 +499,72 @@ namespace stockmind.Services
             return supplierDbId;
         }
 
-        private static object CaptureSnapshot(Product product)
+        private static Product? ResolveProduct(
+            ImportProductRowDto row,
+            string? normalizedSku,
+            IReadOnlyDictionary<long, Product> productsById,
+            IReadOnlyDictionary<string, Product> productsBySku)
         {
-            return new
+            if (!string.IsNullOrWhiteSpace(row.ProductId))
             {
-                product.SkuCode,
-                product.Name,
-                product.CategoryId,
-                product.IsPerishable,
-                product.ShelfLifeDays,
-                product.Uom,
-                product.Price,
-                product.MinStock,
-                product.LeadTimeDays,
-                product.SupplierId
-            };
+                try
+                {
+                    var internalId = ProductCodeHelper.FromPublicId(row.ProductId.Trim());
+                    if (productsById.TryGetValue(internalId, out var productById))
+                    {
+                        return productById;
+                    }
+                }
+                catch
+                {
+                    // Ignore invalid public IDs and fall back to SKU match.
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedSku) &&
+                productsBySku.TryGetValue(normalizedSku, out var productBySku))
+            {
+                return productBySku;
+            }
+
+            return null;
+        }
+
+        private static bool TryResolveCategoryId(
+            string rawValue,
+            IReadOnlyDictionary<string, Category> categoriesByName,
+            IReadOnlyDictionary<string, Category> categoriesByCode,
+            IReadOnlyDictionary<long, Category> categoriesById,
+            out long categoryId)
+        {
+            var normalized = rawValue.Trim();
+
+            if (categoriesByName.TryGetValue(normalized, out var byName))
+            {
+                categoryId = byName.CategoryId;
+                return true;
+            }
+
+            if (categoriesByCode.TryGetValue(normalized, out var byCode))
+            {
+                categoryId = byCode.CategoryId;
+                return true;
+            }
+
+            if (long.TryParse(normalized, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericId) &&
+                categoriesById.TryGetValue(numericId, out var byId))
+            {
+                categoryId = byId.CategoryId;
+                return true;
+            }
+
+            categoryId = default;
+            return false;
+        }
+
+        private static string? NormalizeMediaUrl(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
         private static void EnsurePerishableIntegrity(Product product)
@@ -315,33 +578,6 @@ namespace stockmind.Services
             {
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "shelfLifeDays" });
             }
-        }
-
-        private async Task WriteAuditLogAsync(long productId, string action, object payload, CancellationToken cancellationToken)
-        {
-            var entry = new ProductAuditLog
-            {
-                ProductId = productId,
-                Action = action,
-                Actor = ResolveActor(),
-                Payload = JsonSerializer.Serialize(payload, AuditSerializerOptions),
-                CreatedAt = DateTime.UtcNow
-            };
-
-            await _productAuditLogRepository.AddAsync(entry, cancellationToken);
-        }
-
-        private string ResolveActor()
-        {
-            var user = _httpContextAccessor.HttpContext?.User;
-            if (user?.Identity?.IsAuthenticated == true)
-            {
-                return user.Identity?.Name
-                       ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
-                       ?? "system";
-            }
-
-            return "system";
         }
 
         #endregion
