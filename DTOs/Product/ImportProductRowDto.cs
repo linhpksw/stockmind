@@ -23,7 +23,5 @@ namespace stockmind.DTOs.Product
         public int? ShelfLifeDays { get; set; }
 
         public int? MinStock { get; set; }
-
-        public int? LeadTimeDays { get; set; }
     }
 }

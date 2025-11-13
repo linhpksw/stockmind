@@ -25,8 +25,6 @@ public partial class Product
 
     public int MinStock { get; set; }
 
-    public int LeadTimeDays { get; set; }
-
     public long? SupplierId { get; set; }
 
     public DateTime CreatedAt { get; set; }

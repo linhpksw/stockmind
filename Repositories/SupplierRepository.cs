@@ -93,5 +93,26 @@ public class SupplierRepository
         return query.ToListAsync(cancellationToken);
     }
 
+    public Task<List<Supplier>> ListAllTrackedAsync(bool includeDeleted, CancellationToken cancellationToken)
+    {
+        var query = _dbContext.Suppliers.AsQueryable();
+        if (!includeDeleted)
+        {
+            query = query.Where(s => !s.Deleted);
+        }
+
+        return query.ToListAsync(cancellationToken);
+    }
+
+    public Task AddRangeAsync(IEnumerable<Supplier> suppliers, CancellationToken cancellationToken)
+    {
+        return _dbContext.Suppliers.AddRangeAsync(suppliers, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);
 }

@@ -44,7 +44,7 @@ namespace stockmind.Services
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            ValidateProductRequest(request.SkuCode, request.Name, request.Uom, request.Price, request.MinStock, request.LeadTimeDays, request.IsPerishable, request.ShelfLifeDays);
+            ValidateProductRequest(request.SkuCode, request.Name, request.Uom, request.Price, request.MinStock, request.IsPerishable, request.ShelfLifeDays);
 
             var normalizedSku = request.SkuCode.Trim();
             var normalizedName = request.Name.Trim();
@@ -73,7 +73,6 @@ namespace stockmind.Services
                 Uom = normalizedUom,
                 Price = request.Price,
                 MinStock = request.MinStock,
-                LeadTimeDays = request.LeadTimeDays,
                 SupplierId = supplierId,
                 MediaUrl = NormalizeMediaUrl(request.MediaUrl),
                 Deleted = false
@@ -98,7 +97,7 @@ namespace stockmind.Services
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            ValidateProductRequest(request.SkuCode, request.Name, request.Uom, request.Price, request.MinStock, request.LeadTimeDays, request.IsPerishable, request.ShelfLifeDays);
+            ValidateProductRequest(request.SkuCode, request.Name, request.Uom, request.Price, request.MinStock, request.IsPerishable, request.ShelfLifeDays);
 
             var productId = ProductCodeHelper.FromPublicId(publicId);
             var product = await _productRepository.GetByIdAsync(productId, cancellationToken)
@@ -135,7 +134,6 @@ namespace stockmind.Services
             product.Uom = request.Uom.Trim().ToUpperInvariant();
             product.Price = request.Price;
             product.MinStock = request.MinStock;
-            product.LeadTimeDays = request.LeadTimeDays;
             product.SupplierId = await ResolveSupplierIdAsync(request.SupplierId, cancellationToken);
             product.MediaUrl = NormalizeMediaUrl(request.MediaUrl);
 
@@ -293,7 +291,6 @@ namespace stockmind.Services
                     ? row.ShelfLifeDays ?? product?.ShelfLifeDays
                     : null;
                 var targetMinStock = row.MinStock ?? product?.MinStock ?? 0;
-                var targetLeadTime = row.LeadTimeDays ?? product?.LeadTimeDays ?? 0;
 
                 if (product is null)
                 {
@@ -308,7 +305,6 @@ namespace stockmind.Services
                         Price = price,
                         MediaUrl = mediaUrl,
                         MinStock = targetMinStock,
-                        LeadTimeDays = targetLeadTime,
                         SupplierId = supplierId,
                         Deleted = false,
                         CreatedAt = now,
@@ -322,6 +318,21 @@ namespace stockmind.Services
                 }
 
                 var changed = false;
+
+                if (!string.Equals(product.SkuCode, normalizedSku, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (productsBySku.TryGetValue(normalizedSku!, out var conflictingProduct) &&
+                        conflictingProduct.ProductId != product.ProductId)
+                    {
+                        response.SkippedInvalid += 1;
+                        continue;
+                    }
+
+                    productsBySku.Remove(product.SkuCode);
+                    product.SkuCode = normalizedSku!;
+                    productsBySku[normalizedSku!] = product;
+                    changed = true;
+                }
 
                 if (!string.Equals(product.Name, normalizedName, StringComparison.Ordinal))
                 {
@@ -371,12 +382,6 @@ namespace stockmind.Services
                     changed = true;
                 }
 
-                if (product.LeadTimeDays != targetLeadTime)
-                {
-                    product.LeadTimeDays = targetLeadTime;
-                    changed = true;
-                }
-
                 if (!string.Equals(product.MediaUrl, mediaUrl, StringComparison.Ordinal))
                 {
                     product.MediaUrl = mediaUrl;
@@ -418,7 +423,7 @@ namespace stockmind.Services
 
         #region Helpers
 
-        private static void ValidateProductRequest(string skuCode, string name, string uom, decimal price, int minStock, int leadTimeDays, bool isPerishable, int? shelfLifeDays)
+        private static void ValidateProductRequest(string skuCode, string name, string uom, decimal price, int minStock, bool isPerishable, int? shelfLifeDays)
         {
             if (string.IsNullOrWhiteSpace(skuCode))
             {
@@ -443,11 +448,6 @@ namespace stockmind.Services
             if (minStock < 0)
             {
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "minStock" });
-            }
-
-            if (leadTimeDays < 0)
-            {
-                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "leadTimeDays" });
             }
 
             if (isPerishable)

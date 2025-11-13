@@ -103,7 +103,6 @@ CREATE TABLE dbo.Product (
     price          DECIMAL(19,4) NOT NULL DEFAULT(0),
     media_url      NVARCHAR(1024) NULL,
     min_stock       INT NOT NULL DEFAULT(0) CHECK (min_stock >= 0),
-    lead_time_days   INT NOT NULL DEFAULT(0) CHECK (lead_time_days >= 0),
     supplier_id    BIGINT NULL,
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),

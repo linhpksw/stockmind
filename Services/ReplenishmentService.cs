@@ -69,8 +69,11 @@ namespace stockmind.Services
                 var avgDaily = stats?.AvgDaily ?? 0;
                 var sigmaDaily = stats?.SigmaDaily ?? 0;
 
-                double safetyStock = Z * sigmaDaily * Math.Sqrt(p.LeadTimeDays);
-                double leadTimeDemand = avgDaily * p.LeadTimeDays;
+                var supplierLeadTime = p.Supplier?.LeadTimeDays ?? 0;
+                var normalizedLeadTime = Math.Max(0, supplierLeadTime);
+
+                double safetyStock = Z * sigmaDaily * Math.Sqrt(normalizedLeadTime);
+                double leadTimeDemand = avgDaily * normalizedLeadTime;
                 double rop = leadTimeDemand + safetyStock;
                 double suggestedQty = Math.Max(0, rop - (double)onHand - (double)onOrder);
 
@@ -81,7 +84,7 @@ namespace stockmind.Services
                     OnOrder = onOrder,
                     AvgDaily = Math.Round(avgDaily, 2),
                     SigmaDaily = Math.Round(sigmaDaily, 2),
-                    LeadTimeDays = p.LeadTimeDays,
+                    LeadTimeDays = normalizedLeadTime,
                     SafetyStock = Math.Round(safetyStock, 2),
                     ROP = Math.Round(rop, 2),
                     SuggestedQty = Math.Round(suggestedQty, 2)

@@ -86,4 +86,16 @@ public class SuppliersController : ControllerBase
     }
 
     #endregion
+
+    #region Import
+
+    [HttpPost("import")]
+    [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
+    public async Task<IActionResult> ImportSuppliersAsync([FromBody] ImportSuppliersRequestDto request, CancellationToken cancellationToken)
+    {
+        var result = await _supplierService.ImportSuppliersAsync(request, cancellationToken);
+        return Ok(new ResponseModel<ImportSuppliersResponseDto>(result));
+    }
+
+    #endregion
 }

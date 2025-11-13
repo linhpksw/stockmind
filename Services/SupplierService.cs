@@ -186,6 +186,138 @@ public class SupplierService
 
     #endregion
 
+    #region Import
+
+    public async Task<ImportSuppliersResponseDto> ImportSuppliersAsync(
+        ImportSuppliersRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
+        var response = new ImportSuppliersResponseDto();
+        if (request.Rows == null || request.Rows.Count == 0)
+        {
+            return response;
+        }
+
+        var trackedSuppliers = await _supplierRepository.ListAllTrackedAsync(includeDeleted: true, cancellationToken);
+        var suppliersById = trackedSuppliers.ToDictionary(s => s.SupplierId);
+        var suppliersByName = trackedSuppliers
+            .Where(s => !string.IsNullOrWhiteSpace(s.Name))
+            .ToDictionary(s => s.Name.Trim(), s => s, StringComparer.OrdinalIgnoreCase);
+
+        var utcNow = DateTime.UtcNow;
+        var newSuppliers = new List<Supplier>();
+
+        foreach (var row in request.Rows)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var normalizedName = row?.Name?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedName))
+            {
+                response.SkippedInvalid += 1;
+                continue;
+            }
+
+            Supplier? supplier = null;
+            if (!string.IsNullOrWhiteSpace(row?.SupplierId))
+            {
+                try
+                {
+                    var internalId = SupplierCodeHelper.FromPublicId(row.SupplierId.Trim());
+                    suppliersById.TryGetValue(internalId, out supplier);
+                }
+                catch
+                {
+                    // Ignore invalid public IDs and fall back to name matching.
+                }
+            }
+
+            if (supplier is null && suppliersByName.TryGetValue(normalizedName, out var byName))
+            {
+                supplier = byName;
+            }
+
+            var contact = row?.Contact?.Trim();
+            var leadTime = Math.Max(0, row?.LeadTimeDays ?? supplier?.LeadTimeDays ?? 0);
+
+            if (supplier is null)
+            {
+                var newSupplier = new Supplier
+                {
+                    Name = normalizedName,
+                    Contact = contact,
+                    LeadTimeDays = leadTime,
+                    CreatedAt = utcNow,
+                    LastModifiedAt = utcNow,
+                    Deleted = false,
+                    DeletedAt = null
+                };
+
+                newSuppliers.Add(newSupplier);
+                suppliersByName[normalizedName] = newSupplier;
+                response.Created += 1;
+                continue;
+            }
+
+            var changed = false;
+            if (!string.Equals(supplier.Name, normalizedName, StringComparison.Ordinal))
+            {
+                supplier.Name = normalizedName;
+                suppliersByName[normalizedName] = supplier;
+                changed = true;
+            }
+
+            if (!string.Equals(supplier.Contact, contact, StringComparison.Ordinal))
+            {
+                supplier.Contact = contact;
+                changed = true;
+            }
+
+            if (supplier.LeadTimeDays != leadTime)
+            {
+                supplier.LeadTimeDays = leadTime;
+                changed = true;
+            }
+
+            if (supplier.Deleted)
+            {
+                supplier.Deleted = false;
+                supplier.DeletedAt = null;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                supplier.LastModifiedAt = utcNow;
+                response.Updated += 1;
+            }
+        }
+
+        if (newSuppliers.Count > 0)
+        {
+            await _supplierRepository.AddRangeAsync(newSuppliers, cancellationToken);
+        }
+
+        await _supplierRepository.SaveChangesAsync(cancellationToken);
+
+        response.Total = request.Rows.Count;
+
+        _logger.LogInformation(
+            "Supplier import completed: {Created} created, {Updated} updated, {Skipped} invalid.",
+            response.Created,
+            response.Updated,
+            response.SkippedInvalid);
+
+        return response;
+    }
+
+    #endregion
+
     #region Update
 
     public async Task<SupplierResponseDto> UpdateSupplierAsync(string publicId, UpdateSupplierRequestDto request, CancellationToken cancellationToken)

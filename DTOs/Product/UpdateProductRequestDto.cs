@@ -18,8 +18,6 @@ namespace stockmind.DTOs.Product
 
         public int MinStock { get; set; }
 
-        public int LeadTimeDays { get; set; }
-
         public string? SupplierId { get; set; }
 
         public string? MediaUrl { get; set; }
