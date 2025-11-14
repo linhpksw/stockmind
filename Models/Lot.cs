@@ -25,6 +25,8 @@ public partial class Lot
 
     public virtual ICollection<Grnitem> Grnitems { get; set; } = new List<Grnitem>();
 
+    public virtual ICollection<LotSaleDecision> LotSaleDecisions { get; set; } = new List<LotSaleDecision>();
+
     public virtual Product Product { get; set; } = null!;
 
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();

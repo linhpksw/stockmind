@@ -25,6 +25,41 @@ namespace stockmind.Controllers
             return Ok(new ResponseModel<List<MarkdownRecommendationDto>>(recommendations));
         }
 
+        [HttpGet("rules")]
+        public async Task<IActionResult> ListRulesAsync(CancellationToken cancellationToken = default)
+        {
+            var rules = await _markdownService.ListRulesAsync(cancellationToken);
+            return Ok(new ResponseModel<List<MarkdownRuleDto>>(rules));
+        }
+
+        [HttpPost("rules")]
+        public async Task<IActionResult> CreateRuleAsync(
+            [FromBody] MarkdownRuleRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            var created = await _markdownService.CreateRuleAsync(request, cancellationToken);
+            return Ok(new ResponseModel<MarkdownRuleDto>(created));
+        }
+
+        [HttpPut("rules/{ruleId:long}")]
+        public async Task<IActionResult> UpdateRuleAsync(
+            [FromRoute] long ruleId,
+            [FromBody] MarkdownRuleRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            var updated = await _markdownService.UpdateRuleAsync(ruleId, request, cancellationToken);
+            return Ok(new ResponseModel<MarkdownRuleDto>(updated));
+        }
+
+        [HttpDelete("rules/{ruleId:long}")]
+        public async Task<IActionResult> DeleteRuleAsync(
+            [FromRoute] long ruleId,
+            CancellationToken cancellationToken = default)
+        {
+            var deleted = await _markdownService.DeleteRuleAsync(ruleId, cancellationToken);
+            return Ok(new ResponseModel<MarkdownRuleDto>(deleted));
+        }
+
         [HttpPost("apply")]
         public async Task<IActionResult> ApplyMarkdownAsync(
             [FromBody] MarkdownApplyRequestDto request,
