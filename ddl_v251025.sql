@@ -88,6 +88,27 @@ CREATE TABLE dbo.Supplier (
     deleted_at       DATETIME2(0) NULL
 );
 
+CREATE TABLE dbo.MarginProfile (
+    margin_profile_id   BIGINT IDENTITY(1,1) PRIMARY KEY,
+    parent_category_id  BIGINT NOT NULL,
+    parent_category_name NVARCHAR(200) NOT NULL,
+    margin_profile      NVARCHAR(100) NOT NULL,
+    price_sensitivity   NVARCHAR(150) NOT NULL,
+    min_margin_pct      DECIMAL(5,2) NOT NULL CHECK (min_margin_pct >= 0),
+    target_margin_pct   DECIMAL(5,2) NOT NULL CHECK (target_margin_pct >= 0),
+    max_margin_pct      DECIMAL(5,2) NOT NULL CHECK (max_margin_pct >= 0),
+    notes               NVARCHAR(500) NULL,
+    created_at          DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at    DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted             BIT NOT NULL DEFAULT(0),
+    CONSTRAINT FK_MarginProfile_Category FOREIGN KEY (parent_category_id) REFERENCES dbo.Category(category_id),
+    CONSTRAINT CK_MarginProfile_Order CHECK (min_margin_pct <= target_margin_pct AND target_margin_pct <= max_margin_pct)
+);
+
+CREATE UNIQUE INDEX UX_MarginProfile_Category
+    ON dbo.MarginProfile(parent_category_id)
+    WHERE deleted = 0;
+
 /* ==========================================================
    PRODUCT & INVENTORY CORE
    ========================================================== */

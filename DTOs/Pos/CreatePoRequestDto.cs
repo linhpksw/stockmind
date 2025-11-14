@@ -10,7 +10,7 @@ namespace stockmind.DTOs.Pos
 
         [Required]
         [MinLength(1)]
-        public List<PoItemDto> Items { get; set; }
+        public List<PoItemDto> Items { get; set; } = new List<PoItemDto>();
     }
     public class PoItemDto
     {

@@ -21,6 +21,8 @@ public partial class Category
 
     public virtual ICollection<Category> InverseParentCategory { get; set; } = new List<Category>();
 
+    public virtual MarginProfile? MarginProfile { get; set; }
+
     public virtual ICollection<MarkdownRule> MarkdownRules { get; set; } = new List<MarkdownRule>();
 
     public virtual Category? ParentCategory { get; set; }

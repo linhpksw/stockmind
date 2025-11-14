@@ -23,7 +23,7 @@ namespace stockmind.Repositories
             return await _context.Grns
                 .Include(g => g.Grnitems)
                     .ThenInclude(item => item.Lot)
-                        .ThenInclude(lot => lot.StockMovements)
+                        .ThenInclude(lot => lot!.StockMovements)
                 .FirstOrDefaultAsync(g => g.GrnId == id && !g.Deleted, cancellationToken);
         }
     }

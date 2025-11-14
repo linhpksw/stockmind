@@ -150,6 +150,8 @@ namespace stockmind
             builder.Services.AddScoped<ProductRepository>();
             builder.Services.AddScoped<CategoryRepository>();
             builder.Services.AddScoped<CategoryService>();
+            builder.Services.AddScoped<MarginProfileRepository>();
+            builder.Services.AddScoped<MarginProfileService>();
 
             builder.Services.AddScoped<LotService>();
             builder.Services.AddScoped<LotRepository>();
