@@ -252,10 +252,11 @@ namespace stockmind.Services
                 }
 
                 long? categoryId = null;
-                if (!string.IsNullOrWhiteSpace(row.CategoryName))
+                var normalizedCategoryName = NormalizeLookupValue(row.CategoryName);
+                if (!string.IsNullOrWhiteSpace(normalizedCategoryName))
                 {
                     if (!TryResolveCategoryId(
-                            row.CategoryName,
+                            normalizedCategoryName,
                             categoriesByName,
                             categoriesByCode,
                             categoriesById,
@@ -269,9 +270,9 @@ namespace stockmind.Services
                 }
 
                 long? supplierId = null;
-                if (!string.IsNullOrWhiteSpace(row.BrandName))
+                var normalizedBrand = NormalizeLookupValue(row.BrandName);
+                if (!string.IsNullOrWhiteSpace(normalizedBrand))
                 {
-                    var normalizedBrand = row.BrandName.Trim();
                     if (suppliersByName.TryGetValue(normalizedBrand, out var supplier))
                     {
                         supplierId = supplier.SupplierId;
@@ -537,25 +538,26 @@ namespace stockmind.Services
             IReadOnlyDictionary<long, Category> categoriesById,
             out long categoryId)
         {
-            var normalized = rawValue.Trim();
-
-            if (categoriesByName.TryGetValue(normalized, out var byName))
+            foreach (var candidate in EnumerateCategoryCandidates(rawValue))
             {
-                categoryId = byName.CategoryId;
-                return true;
-            }
+                if (categoriesByName.TryGetValue(candidate, out var byName))
+                {
+                    categoryId = byName.CategoryId;
+                    return true;
+                }
 
-            if (categoriesByCode.TryGetValue(normalized, out var byCode))
-            {
-                categoryId = byCode.CategoryId;
-                return true;
-            }
+                if (categoriesByCode.TryGetValue(candidate, out var byCode))
+                {
+                    categoryId = byCode.CategoryId;
+                    return true;
+                }
 
-            if (long.TryParse(normalized, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericId) &&
-                categoriesById.TryGetValue(numericId, out var byId))
-            {
-                categoryId = byId.CategoryId;
-                return true;
+                if (long.TryParse(candidate, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericId) &&
+                    categoriesById.TryGetValue(numericId, out var byId))
+                {
+                    categoryId = byId.CategoryId;
+                    return true;
+                }
             }
 
             categoryId = default;
@@ -566,6 +568,71 @@ namespace stockmind.Services
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
+
+        private static string? NormalizeLookupValue(string? rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return null;
+            }
+
+            var trimmed = rawValue.Trim();
+            if (EmptyLookupIndicators.Contains(trimmed))
+            {
+                return null;
+            }
+
+            return trimmed;
+        }
+
+        private static IEnumerable<string> EnumerateCategoryCandidates(string rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                yield break;
+            }
+
+            var normalized = rawValue.Trim();
+            var yielded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (yielded.Add(normalized))
+            {
+                yield return normalized;
+            }
+
+            foreach (var delimiter in CategoryNameDelimiters)
+            {
+                if (normalized.IndexOf(delimiter, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                var parts = normalized.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length <= 1)
+                {
+                    continue;
+                }
+
+                for (var i = parts.Length - 1; i >= 0; i--)
+                {
+                    var fragment = parts[i].Trim();
+                    if (fragment.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    if (yielded.Add(fragment))
+                    {
+                        yield return fragment;
+                    }
+                }
+            }
+        }
+
+        private static readonly HashSet<string> EmptyLookupIndicators =
+            new(StringComparer.OrdinalIgnoreCase) { "-", "--", "—", "–" };
+
+        private static readonly string[] CategoryNameDelimiters = { "›", ">", "/", "|", "-", "–", "—" };
 
         private static void EnsurePerishableIntegrity(Product product)
         {
