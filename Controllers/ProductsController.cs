@@ -34,8 +34,14 @@ namespace stockmind.Controllers
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
         public async Task<IActionResult> CreateProductAsync([FromBody] CreateProductRequestDto request, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Creating new product with SKU {Sku}", request?.SkuCode);
-            var product = await _productService.CreateProductAsync(request, cancellationToken);
+            if (request is null)
+            {
+                return BadRequest(new ResponseModel<string>("Request body is required."));
+            }
+
+            var payload = request!;
+            _logger.LogInformation("Creating new product with SKU {Sku}", payload.SkuCode);
+            var product = await _productService.CreateProductAsync(payload, cancellationToken);
             return StatusCode(StatusCodes.Status201Created, new ResponseModel<ProductResponseDto>(product));
         }
 
@@ -43,8 +49,14 @@ namespace stockmind.Controllers
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
         public async Task<IActionResult> UpdateProductAsync([FromRoute] string id, [FromBody] UpdateProductRequestDto request, CancellationToken cancellationToken)
         {
+            if (request is null)
+            {
+                return BadRequest(new ResponseModel<string>("Request body is required."));
+            }
+
             _logger.LogInformation("Updating product {ProductId}", id);
-            var product = await _productService.UpdateProductAsync(id, request, cancellationToken);
+            var payload = request!;
+            var product = await _productService.UpdateProductAsync(id, payload, cancellationToken);
             return Ok(new ResponseModel<ProductResponseDto>(product));
         }
 
@@ -62,7 +74,12 @@ namespace stockmind.Controllers
             [FromBody] ImportProductsRequestDto request,
             CancellationToken cancellationToken)
         {
-            var result = await _productService.ImportProductsAsync(request, cancellationToken);
+            if (request is null)
+            {
+                return BadRequest(new ResponseModel<string>("Request body is required."));
+            }
+
+            var result = await _productService.ImportProductsAsync(request!, cancellationToken);
             return Ok(new ResponseModel<ImportProductsResponseDto>(result));
         }
 

@@ -89,8 +89,14 @@ public class CategoryService
 
         foreach (var row in request.Rows)
         {
-            var normalizedCode = row?.Code?.Trim();
-            var normalizedName = row?.Name?.Trim();
+            if (row is null)
+            {
+                response.SkippedInvalid += 1;
+                continue;
+            }
+
+            var normalizedCode = row.Code?.Trim();
+            var normalizedName = row.Name?.Trim();
 
             if (string.IsNullOrWhiteSpace(normalizedCode) || string.IsNullOrWhiteSpace(normalizedName))
             {
