@@ -4,6 +4,7 @@ using stockmind.Commons.Exceptions;
 using stockmind.DTOs.Markdowns;
 using stockmind.Models;
 using stockmind.Repositories;
+using stockmind.Utils;
 
 namespace stockmind.Services
 {
@@ -11,6 +12,7 @@ namespace stockmind.Services
     {
         private readonly LotRepository _lotRepository;
         private readonly MarkdownRuleRepository _ruleRepository;
+        private readonly CategoryRepository _categoryRepository;
         private readonly ProductRepository _productRepository;
         private readonly SalesOrderItemRepository _salesOrderItemRepository;
         private readonly ILogger<MarkdownService> _logger;
@@ -18,12 +20,14 @@ namespace stockmind.Services
         public MarkdownService(
             LotRepository lotRepository,
             MarkdownRuleRepository ruleRepository,
+            CategoryRepository categoryRepository,
             ProductRepository productRepository,
             SalesOrderItemRepository salesOrderItemRepository,
             ILogger<MarkdownService> logger)
         {
             _lotRepository = lotRepository;
             _ruleRepository = ruleRepository;
+            _categoryRepository = categoryRepository;
             _productRepository = productRepository;
             _salesOrderItemRepository = salesOrderItemRepository;
             _logger = logger;
@@ -103,6 +107,114 @@ namespace stockmind.Services
                 .OrderBy(r => r.DaysToExpiry)
                 .ThenBy(r => r.ProductId, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        public async Task<List<MarkdownRuleDto>> ListRulesAsync(CancellationToken cancellationToken)
+        {
+            var rules = await _ruleRepository.ListAsync(cancellationToken);
+            if (rules.Count == 0)
+            {
+                return new List<MarkdownRuleDto>();
+            }
+
+            return rules
+                .OrderBy(rule => rule.CategoryId.HasValue ? 1 : 0)
+                .ThenBy(rule => rule.Category?.Name ?? "GLOBAL", StringComparer.OrdinalIgnoreCase)
+                .ThenBy(rule => rule.DaysToExpiry)
+                .Select(MarkdownRuleMapper.ToDto)
+                .ToList();
+        }
+
+        [Transactional]
+        public async Task<MarkdownRuleDto> CreateRuleAsync(
+            MarkdownRuleRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var normalized = ValidateRuleRequest(request);
+            var scope = await ResolveRuleScopeAsync(request?.CategoryId, cancellationToken);
+
+            await EnsureRuleIsUniqueAsync(scope.CategoryId, normalized.DaysToExpiry, null, cancellationToken);
+
+            var utcNow = DateTime.UtcNow;
+            var rule = new MarkdownRule
+            {
+                CategoryId = scope.CategoryId,
+                DaysToExpiry = normalized.DaysToExpiry,
+                DiscountPercent = normalized.DiscountPercent,
+                FloorPercentOfCost = normalized.FloorPercentOfCost,
+                CreatedAt = utcNow,
+                LastModifiedAt = utcNow,
+                Deleted = false
+            };
+
+            await _ruleRepository.AddAsync(rule, cancellationToken);
+
+            _logger.LogInformation(
+                "Created markdown rule {RuleId} for {Scope} at D-{Days}.",
+                rule.MarkdownRuleId,
+                DescribeScope(scope),
+                normalized.DaysToExpiry);
+
+            var persisted = await _ruleRepository.GetDetailedByIdAsync(rule.MarkdownRuleId, cancellationToken) ?? rule;
+            return MarkdownRuleMapper.ToDto(persisted);
+        }
+
+        [Transactional]
+        public async Task<MarkdownRuleDto> UpdateRuleAsync(
+            long ruleId,
+            MarkdownRuleRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var normalized = ValidateRuleRequest(request);
+            var scope = await ResolveRuleScopeAsync(request?.CategoryId, cancellationToken);
+
+            var rule = await _ruleRepository.GetByIdAsync(ruleId, cancellationToken)
+                       ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { ruleId.ToString() });
+
+            await EnsureRuleIsUniqueAsync(scope.CategoryId, normalized.DaysToExpiry, rule.MarkdownRuleId, cancellationToken);
+
+            rule.CategoryId = scope.CategoryId;
+            rule.DaysToExpiry = normalized.DaysToExpiry;
+            rule.DiscountPercent = normalized.DiscountPercent;
+            rule.FloorPercentOfCost = normalized.FloorPercentOfCost;
+            rule.LastModifiedAt = DateTime.UtcNow;
+
+            await _ruleRepository.UpdateAsync(rule, cancellationToken);
+
+            _logger.LogInformation(
+                "Updated markdown rule {RuleId} for {Scope} at D-{Days}.",
+                rule.MarkdownRuleId,
+                DescribeScope(scope),
+                normalized.DaysToExpiry);
+
+            var persisted = await _ruleRepository.GetDetailedByIdAsync(rule.MarkdownRuleId, cancellationToken) ?? rule;
+            return MarkdownRuleMapper.ToDto(persisted);
+        }
+
+        [Transactional]
+        public async Task<MarkdownRuleDto> DeleteRuleAsync(
+            long ruleId,
+            CancellationToken cancellationToken)
+        {
+            var rule = await _ruleRepository.GetByIdAsync(ruleId, cancellationToken)
+                       ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { ruleId.ToString() });
+
+            var detailed = await _ruleRepository.GetDetailedByIdAsync(ruleId, cancellationToken) ?? rule;
+
+            rule.Deleted = true;
+            rule.LastModifiedAt = DateTime.UtcNow;
+
+            await _ruleRepository.SoftDeleteAsync(rule, cancellationToken);
+
+            _logger.LogInformation(
+                "Deleted markdown rule {RuleId} for {Scope} at D-{Days}.",
+                rule.MarkdownRuleId,
+                DescribeScope(new RuleScope(rule.CategoryId, detailed.Category)),
+                rule.DaysToExpiry);
+
+            detailed.Deleted = true;
+            detailed.LastModifiedAt = rule.LastModifiedAt;
+            return MarkdownRuleMapper.ToDto(detailed);
         }
 
         [Transactional]
@@ -312,6 +424,75 @@ namespace stockmind.Services
             return Math.Min(normalizedDiscount, maxDiscount);
         }
 
+        private static RuleRequestValues ValidateRuleRequest(MarkdownRuleRequestDto? request)
+        {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.DaysToExpiry < 0)
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "daysToExpiry" });
+            }
+
+            if (request.DiscountPercent <= 0m || request.DiscountPercent > 1m)
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "discountPercent" });
+            }
+
+            if (request.FloorPercentOfCost < 0m || request.FloorPercentOfCost > 1m)
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "floorPercentOfCost" });
+            }
+
+            return new RuleRequestValues(request.DaysToExpiry, request.DiscountPercent, request.FloorPercentOfCost);
+        }
+
+        private async Task<RuleScope> ResolveRuleScopeAsync(string? categoryId, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(categoryId))
+            {
+                return new RuleScope(null, null);
+            }
+
+            var trimmed = categoryId.Trim();
+            if (!long.TryParse(trimmed, out var parsed) || parsed <= 0)
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "categoryId" });
+            }
+
+            var category = await _categoryRepository.GetByIdAsync(parsed, cancellationToken)
+                           ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { trimmed });
+
+            return new RuleScope(parsed, category);
+        }
+
+        private async Task EnsureRuleIsUniqueAsync(long? categoryId, int daysToExpiry, long? excludeRuleId, CancellationToken cancellationToken)
+        {
+            var exists = await _ruleRepository.ExistsForScopeAsync(categoryId, daysToExpiry, excludeRuleId, cancellationToken);
+            if (exists)
+            {
+                var scopeLabel = categoryId.HasValue ? $"category {categoryId.Value}" : "global scope";
+                throw new BizDataAlreadyExistsException(
+                    ErrorCode4xx.DataAlreadyExists,
+                    new[] { $"{scopeLabel} D-{daysToExpiry}" });
+            }
+        }
+
+        private static string DescribeScope(RuleScope scope)
+        {
+            if (scope.CategoryId.HasValue)
+            {
+                var label = string.IsNullOrWhiteSpace(scope.Category?.Name)
+                    ? $"Category #{scope.CategoryId.Value}"
+                    : $"{scope.Category!.Name} (#{scope.CategoryId.Value})";
+                return label;
+            }
+
+            return "GLOBAL";
+        }
+
         private static decimal Clamp(decimal value, decimal min, decimal max)
         {
             if (value < min)
@@ -336,6 +517,10 @@ namespace stockmind.Services
 
             return value.Trim();
         }
+
+        private sealed record RuleRequestValues(int DaysToExpiry, decimal DiscountPercent, decimal FloorPercentOfCost);
+
+        private sealed record RuleScope(long? CategoryId, Category? Category);
 
         private sealed record RuleLookup(
             IReadOnlyDictionary<long, List<MarkdownRule>> CategoryRules,
