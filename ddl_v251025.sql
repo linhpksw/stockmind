@@ -269,6 +269,17 @@ CREATE TABLE dbo.MarkdownRule (
     CONSTRAINT FK_MR_Category FOREIGN KEY (category_id) REFERENCES dbo.Category(category_id)
 );
 
+CREATE TABLE dbo.LotSaleDecision (
+    lot_sale_decision_id BIGINT IDENTITY(1,1) PRIMARY KEY,
+    lot_id               BIGINT NOT NULL,
+    discount_percent     DECIMAL(5,2) NOT NULL CHECK (discount_percent BETWEEN 0 AND 1),
+    is_applied           BIT NOT NULL DEFAULT(0),
+    created_at           DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted              BIT NOT NULL DEFAULT(0),
+    CONSTRAINT FK_LSD_Lot FOREIGN KEY (lot_id) REFERENCES dbo.Lot(lot_id)
+);
+
 CREATE TABLE dbo.ReplenishmentSuggestion (
     repl_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
     product_id   BIGINT NOT NULL,
