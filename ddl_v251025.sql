@@ -121,6 +121,7 @@ CREATE TABLE dbo.Product (
     is_perishable   BIT NOT NULL,                      -- drives FEFO and lot+expiry behaviors
     shelf_life_days  INT NULL,                          -- required when is_perishable=1
     uom            NVARCHAR(16) NOT NULL DEFAULT N'unit',
+    price          DECIMAL(19,4) NOT NULL DEFAULT(0),
     media_url      NVARCHAR(1024) NULL,
     min_stock       INT NOT NULL DEFAULT(0) CHECK (min_stock >= 0),
     supplier_id    BIGINT NULL,
@@ -134,6 +135,16 @@ CREATE TABLE dbo.Product (
             OR (is_perishable = 0))
 );
 
+CREATE TABLE dbo.Inventory (
+    inventory_id     BIGINT IDENTITY(1,1) PRIMARY KEY,
+    product_id       BIGINT NOT NULL,
+    on_hand           DECIMAL(19,4) NOT NULL DEFAULT(0),
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
+    CONSTRAINT FK_Inv_Product  FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id)
+);
+
 CREATE TABLE dbo.Lot (
     lot_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
     product_id  BIGINT NOT NULL,
@@ -141,29 +152,12 @@ CREATE TABLE dbo.Lot (
     received_at  DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     expiry_date  DATE NULL,
     qty_on_hand   DECIMAL(19,4) NOT NULL DEFAULT(0),
-    grn_id       BIGINT NULL,                          -- FK to GRN
-    qty_received DECIMAL(19,4) NULL,                   -- copy from GRNItem.qty_received
-    final_unit_cost DECIMAL(19,4) NULL,                -- copy from GRNItem.final_unit_cost
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT UQ_Lot_Product_LotCode UNIQUE (product_id, lot_code),
     CONSTRAINT FK_Lot_Product   FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id),
-    CONSTRAINT FK_Lot_GRN       FOREIGN KEY (grn_id)      REFERENCES dbo.GRN(grn_id),
     CONSTRAINT CK_Lot_Positive  CHECK (qty_on_hand >= 0)
-);
-
-/* Inventory: now includes lot_id to support per-lot on-hand */
-CREATE TABLE dbo.Inventory (
-    inventory_id     BIGINT IDENTITY(1,1) PRIMARY KEY,
-    product_id       BIGINT NOT NULL,
-    lot_id           BIGINT NULL,
-    on_hand           DECIMAL(19,4) NOT NULL DEFAULT(0),
-    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted          BIT NOT NULL DEFAULT(0),
-    CONSTRAINT FK_Inv_Product  FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id),
-    CONSTRAINT FK_Inventory_Lot FOREIGN KEY (lot_id) REFERENCES dbo.Lot(lot_id)
 );
 
 /* ==========================================================
@@ -174,13 +168,10 @@ CREATE TABLE dbo.PO (
     po_id            BIGINT IDENTITY(1,1) PRIMARY KEY,
     supplier_id      BIGINT NOT NULL,
     status           VARCHAR(16) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','RECEIVED','CANCELLED')),
-    created_by       BIGINT NULL,                      -- UserAccount who created PO
-    total_amount_estimate DECIMAL(19,4) NULL,          -- aggregate of POItem.item_total
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     deleted          BIT NOT NULL DEFAULT(0),
-    CONSTRAINT FK_PO_Supplier FOREIGN KEY (supplier_id) REFERENCES dbo.Supplier(supplier_id),
-    CONSTRAINT FK_PO_CreatedBy FOREIGN KEY (created_by) REFERENCES dbo.UserAccount(user_id)
+    CONSTRAINT FK_PO_Supplier FOREIGN KEY (supplier_id) REFERENCES dbo.Supplier(supplier_id)
 );
 
 CREATE TABLE dbo.POItem (
@@ -189,10 +180,7 @@ CREATE TABLE dbo.POItem (
     product_id   BIGINT NOT NULL,
     qty_ordered   DECIMAL(19,4) NOT NULL CHECK (qty_ordered > 0),
     expected_date DATE NULL,
-    unit_cost_estimate DECIMAL(19,4) NOT NULL CHECK (unit_cost_estimate >= 0), -- gia du kien
-    discount_percent DECIMAL(5,4) NULL DEFAULT 0 CHECK (discount_percent >= 0 AND discount_percent <= 1),
-    final_unit_price DECIMAL(19,4) NULL,  -- = unit_cost_estimate * (1 - discount_percent)
-    item_total DECIMAL(19,4) NULL,        -- = final_unit_price * qty_ordered
+    unit_cost     DECIMAL(19,4) NOT NULL CHECK (unit_cost >= 0),
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     deleted          BIT NOT NULL DEFAULT(0),
@@ -200,21 +188,16 @@ CREATE TABLE dbo.POItem (
     CONSTRAINT FK_POItem_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id)
 );
 
-/* GRN: now includes supplier_id FK to Supplier */
 CREATE TABLE dbo.GRN (
     grn_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
     po_id       BIGINT NULL,
-    supplier_id BIGINT NULL,
     received_at  DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     receiver_id  BIGINT NULL,  -- UserAccount
-    invoice_number NVARCHAR(128) NULL,
-    invoice_date DATETIME2(0) NULL,
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     deleted          BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_GRN_PO       FOREIGN KEY (po_id)      REFERENCES dbo.PO(po_id),
-    CONSTRAINT FK_GRN_Receiver FOREIGN KEY (receiver_id) REFERENCES dbo.UserAccount(user_id),
-    CONSTRAINT FK_GRN_Supplier FOREIGN KEY (supplier_id) REFERENCES dbo.Supplier(supplier_id)
+    CONSTRAINT FK_GRN_Receiver FOREIGN KEY (receiver_id) REFERENCES dbo.UserAccount(user_id)
 );
 
 CREATE TABLE dbo.GRNItem (
@@ -223,10 +206,7 @@ CREATE TABLE dbo.GRNItem (
     product_id   BIGINT NOT NULL,
     lot_id       BIGINT NULL,     -- may be assigned after creating the Lot row
     qty_received  DECIMAL(19,4) NOT NULL CHECK (qty_received > 0),
-    actual_unit_price DECIMAL(19,4) NOT NULL CHECK (actual_unit_price >= 0), -- gia tren hoa don
-    discount_amount DECIMAL(19,4) NULL DEFAULT 0,
-    freight_allocation DECIMAL(19,4) NULL DEFAULT 0,
-    final_unit_cost DECIMAL(19,4) NULL,  -- actual_unit_price - discount allocation + freight allocation per unit (business logic)
+    unit_cost     DECIMAL(19,4) NOT NULL CHECK (unit_cost >= 0),
     lot_code      NVARCHAR(64) NULL,
     expiry_date   DATE NULL,       -- REQUIRED for perishables (validated via trigger)
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
@@ -252,7 +232,6 @@ CREATE TABLE dbo.SalesOrderItem (
     order_item_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
     order_id             BIGINT NOT NULL,
     product_id           BIGINT NOT NULL,
-    lot_id               BIGINT NULL,
     qty                  DECIMAL(19,4) NOT NULL CHECK (qty > 0),
     unit_price            DECIMAL(19,4) NOT NULL CHECK (unit_price >= 0),
     applied_markdown_percent   DECIMAL(5,2) NULL CHECK (applied_markdown_percent BETWEEN 0 AND 1),
@@ -260,8 +239,7 @@ CREATE TABLE dbo.SalesOrderItem (
     last_modified_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     deleted              BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_SOI_Order   FOREIGN KEY (order_id)  REFERENCES dbo.SalesOrder(order_id),
-    CONSTRAINT FK_SOI_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id),
-    CONSTRAINT FK_SOI_Lot     FOREIGN KEY (lot_id)     REFERENCES dbo.Lot(lot_id)
+    CONSTRAINT FK_SOI_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id)
 );
 
 /* ==========================================================
@@ -297,44 +275,9 @@ END;
 GO
 
 /* ==========================================================
-   PRICING / PROMOTION / MARKDOWNS & REPLENISHMENT
+   PRICING / MARKDOWNS & REPLENISHMENT
    ========================================================== */
 
-CREATE TABLE dbo.Pricing (
-    pricing_id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    product_id BIGINT NOT NULL,
-    price DECIMAL(19,4) NOT NULL,
-    effective_from DATETIME2(0) NOT NULL,
-    effective_to DATETIME2(0) NULL,
-    created_by BIGINT NULL,
-    created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted BIT NOT NULL DEFAULT 0,
-    CONSTRAINT FK_Pricing_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id),
-    CONSTRAINT FK_Pricing_User FOREIGN KEY (created_by) REFERENCES dbo.UserAccount(user_id)
-);
-
-CREATE TABLE dbo.Promotion (
-    promotion_id BIGINT IDENTITY(1,1) PRIMARY KEY,
-    code NVARCHAR(64) NULL UNIQUE,
-    name NVARCHAR(200) NOT NULL,
-    description NVARCHAR(1000) NULL,
-    product_id BIGINT NULL,           -- if null -> store-level / category-level promotion
-    category_id BIGINT NULL,
-    promo_price DECIMAL(19,4) NULL,
-    discount_percent DECIMAL(5,4) NULL CHECK (discount_percent BETWEEN 0 AND 1),
-    start_date DATETIME2(0) NOT NULL,
-    end_date DATETIME2(0) NOT NULL,
-    type VARCHAR(50) NOT NULL,        -- 'SINGLE_SKU','STORE_WIDE','CATEGORY','BUNDLE','FLASH'
-    is_active BIT NOT NULL DEFAULT 1,
-    created_by BIGINT NULL,
-    created_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted BIT NOT NULL DEFAULT 0,
-    CONSTRAINT FK_Promotion_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id),
-    CONSTRAINT FK_Promotion_Category FOREIGN KEY (category_id) REFERENCES dbo.Category(category_id),
-    CONSTRAINT FK_Promotion_User FOREIGN KEY (created_by) REFERENCES dbo.UserAccount(user_id)
-);
-
-/* Existing markdown rules for expiry-driven discounts */
 CREATE TABLE dbo.MarkdownRule (
     markdown_rule_id BIGINT IDENTITY(1,1) PRIMARY KEY,
     category_id      BIGINT NULL,
@@ -379,9 +322,7 @@ CREATE TABLE dbo.ReplenishmentSuggestion (
 /* ==========================================================
    BUSINESS RULE TRIGGERS
    ========================================================== */
-
 GO
-/* Enforce perishable GRNItem must have expiry and lot_code */
 CREATE OR ALTER TRIGGER dbo.TR_GRNItem_RequireExpiry_ForPerishable
 ON dbo.GRNItem
 AFTER INSERT
@@ -402,76 +343,6 @@ BEGIN
 END;
 GO
 
-/* Trigger: when POItem inserted/updated -> compute final_unit_price and item_total
-   Business rule: final_unit_price = unit_cost_estimate * (1 - discount_percent)
-   item_total = final_unit_price * qty_ordered
-   Also update PO.total_amount_estimate as SUM(item_total) for that PO
-*/
-CREATE OR ALTER TRIGGER dbo.TR_POItem_CalcPrices_UpdatePO
-ON dbo.POItem
-AFTER INSERT, UPDATE
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    -- Calculate final_unit_price and item_total for inserted/updated rows
-    UPDATE p
-    SET
-        final_unit_price = CASE WHEN i.discount_percent IS NULL THEN i.unit_cost_estimate
-                                ELSE i.unit_cost_estimate * (1 - i.discount_percent) END,
-        item_total = (CASE WHEN i.discount_percent IS NULL THEN i.unit_cost_estimate
-                           ELSE i.unit_cost_estimate * (1 - i.discount_percent) END) * i.qty_ordered,
-        last_modified_at = SYSUTCDATETIME()
-    FROM dbo.POItem p
-    JOIN inserted i ON p.po_item_id = i.po_item_id;
-
-    -- Recompute PO.total_amount_estimate for affected PO(s)
-    ;WITH affected_pos AS (
-        SELECT DISTINCT po_id FROM inserted
-        UNION
-        SELECT DISTINCT po_id FROM deleted
-    )
-    UPDATE po
-    SET total_amount_estimate = ISNULL(summary.total,0),
-        last_modified_at = SYSUTCDATETIME()
-    FROM dbo.PO po
-    JOIN affected_pos a ON po.po_id = a.po_id
-    LEFT JOIN (
-        SELECT po_id, SUM(ISNULL(item_total,0)) AS total
-        FROM dbo.POItem
-        WHERE deleted = 0
-        GROUP BY po_id
-    ) AS summary ON summary.po_id = po.po_id;
-END;
-GO
-
-/*
- Optional: When POItem deleted, update PO.total_amount_estimate.
- This is triggered via the same DELETE action by separate trigger.
-*/
-CREATE OR ALTER TRIGGER dbo.TR_POItem_Delete_UpdatePO
-ON dbo.POItem
-AFTER DELETE
-AS
-BEGIN
-    SET NOCOUNT ON;
-    ;WITH affected_pos AS (
-        SELECT DISTINCT po_id FROM deleted
-    )
-    UPDATE po
-    SET total_amount_estimate = ISNULL(summary.total,0),
-        last_modified_at = SYSUTCDATETIME()
-    FROM dbo.PO po
-    JOIN affected_pos a ON po.po_id = a.po_id
-    LEFT JOIN (
-        SELECT po_id, SUM(ISNULL(item_total,0)) AS total
-        FROM dbo.POItem
-        WHERE deleted = 0
-        GROUP BY po_id
-    ) AS summary ON summary.po_id = po.po_id;
-END;
-GO
-
 /* ==========================================================
    INDEXES FOR HOT PATHS (FEFO/FIFO, REPORTS)
    ========================================================== */
@@ -479,14 +350,10 @@ GO
 CREATE INDEX IX_Lot_Product_Expiry    ON dbo.Lot(product_id, expiry_date);
 CREATE INDEX IX_Lot_Product_Received  ON dbo.Lot(product_id, received_at);
 CREATE INDEX IX_Inv_Product           ON dbo.Inventory(product_id);
-CREATE INDEX IX_Inv_Lot               ON dbo.Inventory(lot_id);
 CREATE INDEX IX_SM_Product_Created    ON dbo.StockMovement(product_id, created_at DESC);
 CREATE INDEX IX_SM_Ref                ON dbo.StockMovement(ref_type, ref_id);
 CREATE INDEX IX_POItem_PO             ON dbo.POItem(po_id);
 CREATE INDEX IX_SalesOrderItem_Order  ON dbo.SalesOrderItem(order_id);
-CREATE INDEX IX_Pricing_Product       ON dbo.Pricing(product_id);
-CREATE INDEX IX_Promotion_Product     ON dbo.Promotion(product_id);
-CREATE INDEX IX_Promotion_Category    ON dbo.Promotion(category_id);
 
 /* ==========================================================
    SEED DATA
@@ -501,4 +368,3 @@ INSERT INTO dbo.Role(code, name) VALUES
 GO
 
 PRINT 'StockMindDB recreated successfully.';
-GO
