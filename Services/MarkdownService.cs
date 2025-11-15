@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using stockmind.Commons.Attributes;
 using stockmind.Commons.Errors;
 using stockmind.Commons.Exceptions;
@@ -15,6 +17,7 @@ namespace stockmind.Services
         private readonly CategoryRepository _categoryRepository;
         private readonly ProductRepository _productRepository;
         private readonly SalesOrderItemRepository _salesOrderItemRepository;
+        private readonly LotSaleDecisionRepository _lotSaleDecisionRepository;
         private readonly ILogger<MarkdownService> _logger;
 
         public MarkdownService(
@@ -23,6 +26,7 @@ namespace stockmind.Services
             CategoryRepository categoryRepository,
             ProductRepository productRepository,
             SalesOrderItemRepository salesOrderItemRepository,
+            LotSaleDecisionRepository lotSaleDecisionRepository,
             ILogger<MarkdownService> logger)
         {
             _lotRepository = lotRepository;
@@ -30,6 +34,7 @@ namespace stockmind.Services
             _categoryRepository = categoryRepository;
             _productRepository = productRepository;
             _salesOrderItemRepository = salesOrderItemRepository;
+            _lotSaleDecisionRepository = lotSaleDecisionRepository;
             _logger = logger;
         }
 
@@ -55,6 +60,8 @@ namespace stockmind.Services
             }
 
             var ruleLookup = BuildRuleLookup(rules);
+            var lotIds = lots.Select(lot => lot.LotId).ToList();
+            var latestDecisions = await _lotSaleDecisionRepository.GetLatestByLotIdsAsync(lotIds, cancellationToken);
             var recommendations = new List<MarkdownRecommendationDto>();
 
             foreach (var lot in lots)
@@ -77,14 +84,17 @@ namespace stockmind.Services
                     continue;
                 }
 
-                if (!TryGetLatestUnitCost(lot, out var unitCost))
+                if (!TryGetLatestUnitCost(lot, out var unitCost, out var qtyReceived))
                 {
                     _logger.LogWarning("Skipping lot {LotId} because no GRN cost history was found.", lot.LotId);
                     continue;
                 }
 
-                var adjustedDiscount = ApplyFloorGuard(lot.Product.Price, unitCost, rule.FloorPercentOfCost, rule.DiscountPercent);
-                if (adjustedDiscount <= 0)
+                var targetDiscount = Clamp(rule.DiscountPercent, 0m, 1m);
+                var floorSafeDiscount = ApplyFloorGuard(lot.Product.Price, unitCost, rule.FloorPercentOfCost, targetDiscount);
+                var requiresFloorOverride = floorSafeDiscount > 0 && floorSafeDiscount + 0.00005m < targetDiscount;
+
+                if (floorSafeDiscount <= 0 && targetDiscount <= 0)
                 {
                     _logger.LogDebug(
                         "Lot {LotId} for product {ProductId} cannot be discounted without breaking floor guard.",
@@ -93,13 +103,28 @@ namespace stockmind.Services
                     continue;
                 }
 
+                latestDecisions.TryGetValue(lot.LotId, out var decision);
+
                 recommendations.Add(new MarkdownRecommendationDto
                 {
                     ProductId = lot.Product.SkuCode,
+                    ProductName = lot.Product.Name,
                     LotId = lot.LotCode,
+                    LotEntityId = lot.LotId,
+                    CategoryId = lot.Product.CategoryId,
+                    CategoryName = lot.Product.Category?.Name,
+                    UnitCost = unitCost,
+                    QtyReceived = qtyReceived,
+                    LotSaleDecisionId = decision?.LotSaleDecisionId,
+                    LotSaleDecisionApplied = decision?.IsApplied ?? false,
+                    ReceivedAt = lot.ReceivedAt,
                     DaysToExpiry = daysToExpiry,
-                    SuggestedDiscountPct = decimal.Round(adjustedDiscount, 4, MidpointRounding.AwayFromZero),
-                    FloorPctOfCost = rule.FloorPercentOfCost
+                    SuggestedDiscountPct = decimal.Round(targetDiscount, 4, MidpointRounding.AwayFromZero),
+                    FloorPctOfCost = rule.FloorPercentOfCost,
+                    FloorSafeDiscountPct = requiresFloorOverride
+                        ? decimal.Round(floorSafeDiscount, 4, MidpointRounding.AwayFromZero)
+                        : null,
+                    RequiresFloorOverride = requiresFloorOverride
                 });
             }
 
@@ -264,7 +289,7 @@ namespace stockmind.Services
             var rule = ResolveRule(product.CategoryId, daysToExpiry, lookup)
                        ?? throw new BizException(ErrorCode4xx.InvalidInput, new[] { $"no markdown rule for D-{daysToExpiry}" });
 
-            if (!TryGetLatestUnitCost(lot, out var unitCost))
+            if (!TryGetLatestUnitCost(lot, out var unitCost, out _))
             {
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "unit cost history missing" });
             }
@@ -287,11 +312,78 @@ namespace stockmind.Services
                 request.OverrideFloor,
                 affected);
 
+            await _lotSaleDecisionRepository.AddAsync(lot.LotId, discountPct, true, cancellationToken);
+
             return new MarkdownApplyResponseDto
             {
                 Applied = true,
                 EffectivePrice = effectivePrice
             };
+        }
+
+        public async Task<MarkdownApplyBulkResponseDto> ApplyMarkdownsAsync(
+            MarkdownApplyBulkRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            if (request?.Items == null || request.Items.Count == 0)
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "items" });
+            }
+
+            var response = new MarkdownApplyBulkResponseDto
+            {
+                Requested = request.Items.Count
+            };
+
+            foreach (var item in request.Items)
+            {
+                try
+                {
+                    await ApplyMarkdownAsync(item, cancellationToken);
+                    response.Applied++;
+                }
+                catch (BizException ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to apply markdown for product {ProductId} lot {LotId}.",
+                        item?.ProductId,
+                        item?.LotId);
+                    response.Errors.Add(
+                        $"{item?.ProductId ?? "?"}/{item?.LotId ?? "?"}: {ex.Message}{FormatParams(ex.Params)}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Unexpected error applying markdown for product {ProductId} lot {LotId}.",
+                        item?.ProductId,
+                        item?.LotId);
+                    response.Errors.Add($"{item?.ProductId ?? "?"}/{item?.LotId ?? "?"}: {ex.Message}");
+                }
+            }
+
+            response.Failed = response.Requested - response.Applied;
+            return response;
+        }
+
+        public async Task RevertLotSaleDecisionAsync(long decisionId, CancellationToken cancellationToken)
+        {
+            var updated = await _lotSaleDecisionRepository.UpdateIsAppliedAsync(decisionId, false, cancellationToken);
+            if (!updated)
+            {
+                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"lotSaleDecisionId={decisionId}" });
+            }
+        }
+
+        private static string FormatParams(IReadOnlyCollection<string> parameters)
+        {
+            if (parameters == null || parameters.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return $" ({string.Join(", ", parameters)})";
         }
 
         private static RuleLookup BuildRuleLookup(IEnumerable<MarkdownRule> rules)
@@ -379,9 +471,10 @@ namespace stockmind.Services
             return list;
         }
 
-        private static bool TryGetLatestUnitCost(Lot lot, out decimal unitCost)
+        private static bool TryGetLatestUnitCost(Lot lot, out decimal unitCost, out decimal qtyReceived)
         {
             unitCost = 0m;
+            qtyReceived = 0m;
             if (lot.Grnitems is null || lot.Grnitems.Count == 0)
             {
                 return false;
@@ -398,6 +491,7 @@ namespace stockmind.Services
             }
 
             unitCost = grnItem.UnitCost;
+            qtyReceived = grnItem.QtyReceived;
             return unitCost >= 0;
         }
 

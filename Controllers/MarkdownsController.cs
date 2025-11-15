@@ -18,7 +18,7 @@ namespace stockmind.Controllers
 
         [HttpGet("recommendations")]
         public async Task<IActionResult> GetRecommendationsAsync(
-            [FromQuery] int days = 3,
+            [FromQuery] int days = 1,
             CancellationToken cancellationToken = default)
         {
             var recommendations = await _markdownService.GetRecommendationsAsync(days, cancellationToken);
@@ -67,6 +67,22 @@ namespace stockmind.Controllers
         {
             var result = await _markdownService.ApplyMarkdownAsync(request, cancellationToken);
             return Ok(new ResponseModel<MarkdownApplyResponseDto>(result));
+        }
+
+        [HttpPost("apply/bulk")]
+        public async Task<IActionResult> ApplyMarkdownsAsync(
+            [FromBody] MarkdownApplyBulkRequestDto request,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _markdownService.ApplyMarkdownsAsync(request, cancellationToken);
+            return Ok(new ResponseModel<MarkdownApplyBulkResponseDto>(result));
+        }
+
+        [HttpPost("decisions/{decisionId:long}/revert")]
+        public async Task<IActionResult> RevertLotSaleDecisionAsync(long decisionId, CancellationToken cancellationToken = default)
+        {
+            await _markdownService.RevertLotSaleDecisionAsync(decisionId, cancellationToken);
+            return Ok(new ResponseModel<bool>(true));
         }
     }
 }

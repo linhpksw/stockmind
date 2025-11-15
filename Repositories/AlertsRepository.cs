@@ -13,35 +13,35 @@ namespace stockmind.Repositories
             _dbContext = dbContext;
         }
 
-        public async Task<IReadOnlyList<(string ProductId, decimal OnHand, int MinStock)>> GetLowStockAsync(CancellationToken ct)
+        public async Task<IReadOnlyList<(string ProductId, string ProductName, decimal OnHand, int MinStock)>> GetLowStockAsync(CancellationToken ct)
         {
-            var lotBalances = from lot in _dbContext.Lots
-                              where !lot.Deleted
-                              group lot by lot.ProductId
-                into g
-                              select new { ProductId = g.Key, OnHand = g.Sum(l => l.QtyOnHand) };
-
-            var query = from product in _dbContext.Products
-                        join balance in lotBalances on product.ProductId equals balance.ProductId into grouped
-                        from balance in grouped.DefaultIfEmpty()
-                        let onHand = balance != null ? balance.OnHand : 0m
-                        where onHand <= product.MinStock
-                        select new { product.ProductId, OnHand = onHand, product.MinStock };
+            var query = _dbContext.Products
+                .Where(product => !product.Deleted)
+                .Select(product => new
+                {
+                    product.ProductId,
+                    product.Name,
+                    product.MinStock,
+                    OnHand = _dbContext.Lots
+                        .Where(lot => lot.ProductId == product.ProductId && !lot.Deleted)
+                        .Sum(lot => (decimal?)lot.QtyOnHand) ?? 0m
+                })
+                .Where(x => x.OnHand <= (decimal)x.MinStock);
 
             var list = await query.AsNoTracking().ToListAsync(ct);
-            return list.Select(x => (x.ProductId.ToString(), x.OnHand, x.MinStock)).ToList();
+            return list.Select(x => (x.ProductId.ToString(), x.Name, x.OnHand, x.MinStock)).ToList();
         }
 
-        public async Task<IReadOnlyList<(string ProductId, string LotId, DateOnly ExpiryDate, decimal QtyOnHand)>> GetPerishableLotsExpiringWithinAsync(int days, CancellationToken ct)
+        public async Task<IReadOnlyList<(string ProductId, string LotId, string LotCode, DateOnly ExpiryDate, decimal QtyOnHand)>> GetPerishableLotsExpiringWithinAsync(int days, CancellationToken ct)
         {
             var cutOff = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(days));
             var q = from lot in _dbContext.Lots
                     join p in _dbContext.Products on lot.ProductId equals p.ProductId
                     where p.IsPerishable && lot.ExpiryDate != null && lot.ExpiryDate <= cutOff && lot.QtyOnHand > 0
-                    select new { p.ProductId, LotId = lot.LotId, lot.ExpiryDate, lot.QtyOnHand };
+                    select new { p.ProductId, LotId = lot.LotId, lot.LotCode, lot.ExpiryDate, lot.QtyOnHand };
 
             var list = await q.AsNoTracking().ToListAsync(ct);
-            return list.Select(x => (x.ProductId.ToString(), x.LotId.ToString(), x.ExpiryDate!.Value, x.QtyOnHand)).ToList();
+            return list.Select(x => (x.ProductId.ToString(), x.LotId.ToString(), x.LotCode, x.ExpiryDate!.Value, x.QtyOnHand)).ToList();
         }
 
         public async Task<IReadOnlyList<(string ProductId, decimal UnitsSold)>> GetUnitsSoldInWindowAsync(int windowDays, CancellationToken ct)
