@@ -49,11 +49,11 @@ public partial class StockMindDbContext : DbContext
     {
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B4C4735DF8");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B4A8DE09B5");
 
             entity.ToTable("Category");
 
-            entity.HasIndex(e => e.Code, "UQ__Category__357D4CF9F6038A3D").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Category__357D4CF9CCAF2223").IsUnique();
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Code)
@@ -80,7 +80,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Grn>(entity =>
         {
-            entity.HasKey(e => e.GrnId).HasName("PK__GRN__39D8A22AE7C89E80");
+            entity.HasKey(e => e.GrnId).HasName("PK__GRN__39D8A22A4F9B463B");
 
             entity.ToTable("GRN");
 
@@ -112,7 +112,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Grnitem>(entity =>
         {
-            entity.HasKey(e => e.GrnItemId).HasName("PK__GRNItem__92DEE4E6841E31FD");
+            entity.HasKey(e => e.GrnItemId).HasName("PK__GRNItem__92DEE4E6080C689C");
 
             entity.ToTable("GRNItem", tb => tb.HasTrigger("TR_GRNItem_RequireExpiry_ForPerishable"));
 
@@ -157,7 +157,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Lot>(entity =>
         {
-            entity.HasKey(e => e.LotId).HasName("PK__Lot__38CAA92B99E6567A");
+            entity.HasKey(e => e.LotId).HasName("PK__Lot__38CAA92B20C61CC2");
 
             entity.ToTable("Lot");
 
@@ -198,7 +198,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<LotSaleDecision>(entity =>
         {
-            entity.HasKey(e => e.LotSaleDecisionId).HasName("PK__LotSaleD__6CC211DBB899BB3D");
+            entity.HasKey(e => e.LotSaleDecisionId).HasName("PK__LotSaleD__6CC211DB2DB60AEF");
 
             entity.ToTable("LotSaleDecision");
 
@@ -226,7 +226,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<MarginProfile>(entity =>
         {
-            entity.HasKey(e => e.MarginProfileId).HasName("PK__MarginPr__7F927B6977E61C9D");
+            entity.HasKey(e => e.MarginProfileId).HasName("PK__MarginPr__7F927B699E02D516");
 
             entity.ToTable("MarginProfile");
 
@@ -275,7 +275,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<MarkdownRule>(entity =>
         {
-            entity.HasKey(e => e.MarkdownRuleId).HasName("PK__Markdown__6A111CE158F1456D");
+            entity.HasKey(e => e.MarkdownRuleId).HasName("PK__Markdown__6A111CE1C14902BC");
 
             entity.ToTable("MarkdownRule");
 
@@ -305,7 +305,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Po>(entity =>
         {
-            entity.HasKey(e => e.PoId).HasName("PK__PO__368DA7F00E4A0269");
+            entity.HasKey(e => e.PoId).HasName("PK__PO__368DA7F0CEBD825F");
 
             entity.ToTable("PO");
 
@@ -334,7 +334,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Poitem>(entity =>
         {
-            entity.HasKey(e => e.PoItemId).HasName("PK__POItem__E2A583056B819CC1");
+            entity.HasKey(e => e.PoItemId).HasName("PK__POItem__E2A5830518699F76");
 
             entity.ToTable("POItem");
 
@@ -373,11 +373,11 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Product__47027DF5FF3FF645");
+            entity.HasKey(e => e.ProductId).HasName("PK__Product__47027DF5A3BE899B");
 
             entity.ToTable("Product");
 
-            entity.HasIndex(e => e.SkuCode, "UQ__Product__843F428F0C7D2EE5").IsUnique();
+            entity.HasIndex(e => e.SkuCode, "UQ__Product__843F428F610DB2E0").IsUnique();
 
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
@@ -422,7 +422,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<ReplenishmentSuggestion>(entity =>
         {
-            entity.HasKey(e => e.ReplId).HasName("PK__Replenis__0FA1E662ECC05868");
+            entity.HasKey(e => e.ReplId).HasName("PK__Replenis__0FA1E662D7FF4A60");
 
             entity.ToTable("ReplenishmentSuggestion");
 
@@ -472,11 +472,11 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CCDE72DEBE");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC0E8CC9A3");
 
             entity.ToTable("Role");
 
-            entity.HasIndex(e => e.Code, "UQ__Role__357D4CF9CB6BFCA3").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Role__357D4CF9ACDE2804").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.Code)
@@ -499,7 +499,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<SalesOrder>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__SalesOrd__465962298E701F48");
+            entity.HasKey(e => e.OrderId).HasName("PK__SalesOrd__4659622926A41D9F");
 
             entity.ToTable("SalesOrder");
 
@@ -517,7 +517,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<SalesOrderItem>(entity =>
         {
-            entity.HasKey(e => e.OrderItemId).HasName("PK__SalesOrd__3764B6BCDF2EB98F");
+            entity.HasKey(e => e.OrderItemId).HasName("PK__SalesOrd__3764B6BC5F99E8F8");
 
             entity.ToTable("SalesOrderItem");
 
@@ -558,7 +558,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<StockMovement>(entity =>
         {
-            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D1022244153B0");
+            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D1022DBE96EBF");
 
             entity.ToTable("StockMovement", tb => tb.HasTrigger("TR_StockMovement_NoUpdateDelete"));
 
@@ -606,7 +606,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Supplier>(entity =>
         {
-            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E8993A40AB");
+            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E8E50DBBD5");
 
             entity.ToTable("Supplier");
 
@@ -634,15 +634,15 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<UserAccount>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__UserAcco__B9BE370F3A3E6FA3");
+            entity.HasKey(e => e.UserId).HasName("PK__UserAcco__B9BE370F66451FBF");
 
             entity.ToTable("UserAccount");
 
-            entity.HasIndex(e => e.PhoneNumber, "UQ__UserAcco__A1936A6B977D16C9").IsUnique();
+            entity.HasIndex(e => e.PhoneNumber, "UQ__UserAcco__A1936A6BD798A2F6").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__UserAcco__AB6E6164579719DF").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__UserAcco__AB6E61647BE167C9").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__UserAcco__F3DBC57257D43395").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__UserAcco__F3DBC5725C230135").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.CreatedAt)
@@ -686,7 +686,7 @@ public partial class StockMindDbContext : DbContext
                         .HasConstraintName("FK__UserRole__user_i__46E78A0C"),
                     j =>
                     {
-                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__6EDEA15308F2F9F4");
+                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__6EDEA153E042A0AC");
                         j.ToTable("UserRole");
                         j.IndexerProperty<long>("UserId").HasColumnName("user_id");
                         j.IndexerProperty<long>("RoleId").HasColumnName("role_id");

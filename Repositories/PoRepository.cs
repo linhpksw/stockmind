@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using stockmind.Models;
 
 namespace stockmind.Repositories
@@ -34,5 +35,74 @@ namespace stockmind.Repositories
                 .Where(poi => poi.Po.Status == "OPEN")
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task ClearOpenPosAsync(CancellationToken cancellationToken)
+        {
+            var openItems = await _context.Poitems
+                .Where(item => item.Po.Status == "OPEN")
+                .ToListAsync(cancellationToken);
+            if (openItems.Count > 0)
+            {
+                _context.Poitems.RemoveRange(openItems);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            var openPos = await _context.Pos
+                .Where(po => po.Status == "OPEN")
+                .ToListAsync(cancellationToken);
+            if (openPos.Count > 0)
+            {
+                _context.Pos.RemoveRange(openPos);
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        public async Task<List<Po>> GetOpenPosWithItemsAsync(CancellationToken cancellationToken)
+        {
+            return await _context.Pos
+                .Where(po => po.Status == "OPEN" && !po.Deleted)
+                .Include(po => po.Supplier)
+                .Include(po => po.Poitems)
+                    .ThenInclude(item => item.Product)
+                        .ThenInclude(p => p.Category)
+                .Include(po => po.Poitems)
+                    .ThenInclude(item => item.Product)
+                        .ThenInclude(p => p.Supplier)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<PageResult<Po>> ListPagedAsync(
+            int pageNum,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            var query = _context.Pos
+                .Where(po => !po.Deleted)
+                .Include(po => po.Supplier)
+                .Include(po => po.Poitems)
+                    .ThenInclude(item => item.Product)
+                        .ThenInclude(p => p.Supplier)
+                .Include(po => po.Poitems)
+                    .ThenInclude(item => item.Product)
+                        .ThenInclude(p => p.Category)
+                .OrderByDescending(po => po.CreatedAt);
+
+            var skip = (pageNum - 1) * pageSize;
+            var total = await query.LongCountAsync(cancellationToken);
+            var items = await query
+                .Skip(skip)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            return new PageResult<Po>(total, items);
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken)
+        {
+            return _context.SaveChangesAsync(cancellationToken);
+        }
+
+        public readonly record struct PageResult<T>(long Total, IReadOnlyCollection<T> Items);
     }
 }
