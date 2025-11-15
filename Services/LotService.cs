@@ -19,17 +19,16 @@ namespace stockmind.Services
 
         #region Get by lot id and product id
 
-        public async Task<Lot> GetLotForProductAsync(string rawLotId, string rawProductId, bool includeDeleted, CancellationToken cancellationToken)
+        public async Task<Lot> GetLotForProductAsync(string lotCode, string rawProductId, bool includeDeleted, CancellationToken cancellationToken)
         {
-            var lotId = LotCodeHelper.FromPublicId(rawLotId);
             var productId = ProductCodeHelper.FromPublicId(rawProductId);
 
-            var lot = await _lotRepository.GetForProductAsync(lotId, productId, cancellationToken)
-                             ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { rawLotId, rawProductId });
+            var lot = await _lotRepository.GetForProductAsync(lotCode, productId, cancellationToken)
+                             ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { lotCode, rawProductId });
 
             if (lot.Deleted && !includeDeleted)
             {
-                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { rawLotId, rawProductId });
+                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { lotCode, rawProductId });
             }
 
             return lot;

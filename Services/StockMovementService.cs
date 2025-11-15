@@ -55,7 +55,7 @@ namespace stockmind.Services
             };
 
             await _stockMovementRepository.AddAsync(movement, cancellationToken);
-            _logger.LogInformation("Stock Movement created with id {SupplierId}", movement.MovementId);
+            _logger.LogInformation("Stock Movement created with id {MovementId}", movement.MovementId);
 
             return movement;
         }
