@@ -85,103 +85,200 @@ public class CategoryService
         var categoriesById = existingCategories.ToDictionary(c => c.CategoryId);
 
         var now = DateTime.UtcNow;
-        var newCategories = new List<Category>();
+        var newCategoriesAutoIds = new List<Category>();
+        var newCategoriesExplicitIds = new List<Category>();
 
-        foreach (var row in request.Rows)
+        var pendingRows = request.Rows.Where(r => r != null).ToList();
+        var nullRows = request.Rows.Count - pendingRows.Count;
+        if (nullRows > 0)
         {
-            if (row is null)
-            {
-                response.SkippedInvalid += 1;
-                continue;
-            }
-
-            var normalizedCode = row.Code?.Trim();
-            var normalizedName = row.Name?.Trim();
-
-            if (string.IsNullOrWhiteSpace(normalizedCode) || string.IsNullOrWhiteSpace(normalizedName))
-            {
-                response.SkippedInvalid += 1;
-                continue;
-            }
-
-            var parentResolution = ResolveParent(row, categoriesByCode, categoriesById);
-            if (parentResolution.Missing)
-            {
-                response.SkippedMissingParent += 1;
-                continue;
-            }
-
-            if (categoriesByCode.TryGetValue(normalizedCode, out var existing))
-            {
-                var changed = false;
-                if (!string.Equals(existing.Name, normalizedName, StringComparison.Ordinal))
-                {
-                    existing.Name = normalizedName;
-                    changed = true;
-                }
-
-                var desiredParentId = parentResolution.Parent != null && parentResolution.Parent.CategoryId > 0
-                    ? parentResolution.Parent.CategoryId
-                    : (long?)null;
-                if (existing.ParentCategoryId != desiredParentId)
-                {
-                    existing.ParentCategoryId = desiredParentId;
-                    if (parentResolution.Parent != null && parentResolution.Parent.CategoryId == 0)
-                    {
-                        existing.ParentCategory = parentResolution.Parent;
-                    }
-                    changed = true;
-                }
-
-                if (existing.Deleted)
-                {
-                    existing.Deleted = false;
-                    changed = true;
-                }
-
-                if (changed)
-                {
-                    existing.LastModifiedAt = now;
-                    response.Updated += 1;
-                }
-
-                continue;
-            }
-
-            var category = new Category
-            {
-                Code = normalizedCode,
-                Name = normalizedName,
-                CreatedAt = now,
-                LastModifiedAt = now,
-                Deleted = false,
-                ParentCategoryId = parentResolution.Parent != null && parentResolution.Parent.CategoryId > 0
-                    ? parentResolution.Parent.CategoryId
-                    : null,
-            };
-
-            if (parentResolution.Parent != null && parentResolution.Parent.CategoryId == 0)
-            {
-                category.ParentCategory = parentResolution.Parent;
-            }
-
-            newCategories.Add(category);
-            categoriesByCode[normalizedCode] = category;
-            response.Created += 1;
+            response.SkippedInvalid += nullRows;
         }
 
-        if (newCategories.Count > 0)
+        while (pendingRows.Count > 0)
         {
-            await _categoryRepository.AddRangeAsync(newCategories, cancellationToken);
+            var remainingRows = new List<ImportCategoryRowDto>();
+            var processedInPass = 0;
+
+            foreach (var row in pendingRows)
+            {
+                var result = TryProcessImportRow(
+                    row,
+                    now,
+                    categoriesByCode,
+                    categoriesById,
+                    newCategoriesAutoIds,
+                    newCategoriesExplicitIds,
+                    response);
+
+                switch (result)
+                {
+                    case ImportRowProcessResult.Processed:
+                        processedInPass += 1;
+                        break;
+                    case ImportRowProcessResult.MissingParent:
+                        remainingRows.Add(row);
+                        break;
+                    case ImportRowProcessResult.Invalid:
+                        break;
+                }
+            }
+
+            if (processedInPass == 0)
+            {
+                response.SkippedMissingParent += remainingRows.Count;
+                break;
+            }
+
+            pendingRows = remainingRows;
+        }
+
+        if (newCategoriesAutoIds.Count > 0)
+        {
+            await _categoryRepository.AddRangeAsync(newCategoriesAutoIds, cancellationToken);
         }
 
         await _categoryRepository.SaveChangesAsync(cancellationToken);
+
+        if (newCategoriesExplicitIds.Count > 0)
+        {
+            await _categoryRepository.AddRangeWithExplicitIdsAsync(newCategoriesExplicitIds, cancellationToken);
+        }
+
         _logger.LogInformation(
             "Category import completed: {Created} created, {Updated} updated, {Skipped} skipped.",
             response.Created,
             response.Updated,
             response.SkippedInvalid + response.SkippedMissingParent);
         return response;
+    }
+
+    private ImportRowProcessResult TryProcessImportRow(
+        ImportCategoryRowDto row,
+        DateTime timestamp,
+        IDictionary<string, Category> categoriesByCode,
+        IDictionary<long, Category> categoriesById,
+        IList<Category> newCategoriesAutoIds,
+        IList<Category> newCategoriesExplicitIds,
+        ImportCategoriesResponseDto response)
+    {
+        var normalizedCode = row.Code?.Trim();
+        var normalizedName = row.Name?.Trim();
+
+        if (string.IsNullOrWhiteSpace(normalizedCode) || string.IsNullOrWhiteSpace(normalizedName))
+        {
+            response.SkippedInvalid += 1;
+            return ImportRowProcessResult.Invalid;
+        }
+
+        var parentResolution = ResolveParent(row, categoriesByCode, categoriesById);
+        if (parentResolution.Missing)
+        {
+            return ImportRowProcessResult.MissingParent;
+        }
+
+        var requestedCategoryId = row.CategoryId.HasValue && row.CategoryId.Value > 0
+            ? row.CategoryId.Value
+            : (long?)null;
+
+        var existing = FindExistingCategory(normalizedCode, requestedCategoryId, categoriesByCode, categoriesById);
+        if (existing != null)
+        {
+            var desiredParentId = parentResolution.Parent != null && parentResolution.Parent.CategoryId > 0
+                ? parentResolution.Parent.CategoryId
+                : (long?)null;
+
+            var changed = false;
+
+            if (!string.Equals(existing.Name, normalizedName, StringComparison.Ordinal))
+            {
+                existing.Name = normalizedName;
+                changed = true;
+            }
+
+            if (existing.ParentCategoryId != desiredParentId)
+            {
+                existing.ParentCategoryId = desiredParentId;
+                if (parentResolution.Parent != null && parentResolution.Parent.CategoryId == 0)
+                {
+                    existing.ParentCategory = parentResolution.Parent;
+                }
+                changed = true;
+            }
+
+            if (existing.Deleted)
+            {
+                existing.Deleted = false;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                existing.LastModifiedAt = timestamp;
+                response.Updated += 1;
+            }
+
+            return ImportRowProcessResult.Processed;
+        }
+
+        var category = new Category
+        {
+            Code = normalizedCode,
+            Name = normalizedName,
+            CreatedAt = timestamp,
+            LastModifiedAt = timestamp,
+            Deleted = false,
+            ParentCategoryId = parentResolution.Parent != null && parentResolution.Parent.CategoryId > 0
+                ? parentResolution.Parent.CategoryId
+                : null,
+        };
+
+        if (parentResolution.Parent != null && parentResolution.Parent.CategoryId == 0)
+        {
+            category.ParentCategory = parentResolution.Parent;
+        }
+
+        if (requestedCategoryId.HasValue)
+        {
+            category.CategoryId = requestedCategoryId.Value;
+            newCategoriesExplicitIds.Add(category);
+            categoriesById[requestedCategoryId.Value] = category;
+        }
+        else
+        {
+            newCategoriesAutoIds.Add(category);
+        }
+
+        categoriesByCode[normalizedCode] = category;
+        response.Created += 1;
+        return ImportRowProcessResult.Processed;
+    }
+
+    private static Category? FindExistingCategory(
+        string normalizedCode,
+        long? requestedCategoryId,
+        IDictionary<string, Category> categoriesByCode,
+        IDictionary<long, Category> categoriesById)
+    {
+        if (requestedCategoryId.HasValue &&
+            categoriesById.TryGetValue(requestedCategoryId.Value, out var existingById))
+        {
+            return existingById;
+        }
+
+        if (categoriesByCode.TryGetValue(normalizedCode, out var existingByCode))
+        {
+            return existingByCode;
+        }
+
+        return null;
+    }
+
+    private enum ImportRowProcessResult
+    {
+        Processed,
+        MissingParent,
+        Invalid
     }
 
     private static ParentResolutionResult ResolveParent(

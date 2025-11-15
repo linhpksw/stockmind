@@ -11,7 +11,7 @@ public partial class MarginProfile
 
     public string ParentCategoryName { get; set; } = null!;
 
-    public string MarginProfileName { get; set; } = null!;
+    public string Profile { get; set; } = null!;
 
     public string PriceSensitivity { get; set; } = null!;
 

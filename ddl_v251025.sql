@@ -92,7 +92,7 @@ CREATE TABLE dbo.MarginProfile (
     margin_profile_id   BIGINT IDENTITY(1,1) PRIMARY KEY,
     parent_category_id  BIGINT NOT NULL,
     parent_category_name NVARCHAR(200) NOT NULL,
-    margin_profile      NVARCHAR(100) NOT NULL,
+    profile      NVARCHAR(100) NOT NULL,
     price_sensitivity   NVARCHAR(150) NOT NULL,
     min_margin_pct      DECIMAL(5,2) NOT NULL CHECK (min_margin_pct >= 0),
     target_margin_pct   DECIMAL(5,2) NOT NULL CHECK (target_margin_pct >= 0),
