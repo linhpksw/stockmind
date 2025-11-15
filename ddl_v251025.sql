@@ -66,6 +66,29 @@ CREATE TABLE dbo.UserRole (
     FOREIGN KEY (role_id) REFERENCES dbo.Role(role_id)
 );
 
+CREATE TABLE dbo.Customer (
+    customer_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
+    loyalty_code     NVARCHAR(64) NULL UNIQUE,
+    full_name        NVARCHAR(200) NOT NULL,
+    phone_number     NVARCHAR(15) NOT NULL,
+    email            NVARCHAR(256) NULL,
+    loyalty_points   INT NOT NULL DEFAULT(0),
+    notes            NVARCHAR(500) NULL,
+    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    deleted          BIT NOT NULL DEFAULT(0),
+    CONSTRAINT CK_Customer_Phone
+        CHECK (
+            phone_number IS NOT NULL
+            AND LEN(phone_number) BETWEEN 9 AND 15
+            AND phone_number NOT LIKE '%[^0-9+]%'
+        )
+);
+
+CREATE UNIQUE INDEX UX_Customer_Phone
+    ON dbo.Customer(phone_number)
+    WHERE deleted = 0;
+
 CREATE TABLE dbo.Category (
     category_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
     code               NVARCHAR(50) NOT NULL UNIQUE,
@@ -223,24 +246,40 @@ CREATE TABLE dbo.GRNItem (
 
 CREATE TABLE dbo.SalesOrder (
     order_id         BIGINT IDENTITY(1,1) PRIMARY KEY,
+    order_code       NVARCHAR(32) NOT NULL,
+    cashier_id       BIGINT NOT NULL,
+    customer_id      BIGINT NULL,
+    cashier_notes    NVARCHAR(500) NULL,
+    items_count      INT NOT NULL DEFAULT(0),
+    subtotal         DECIMAL(19,4) NOT NULL DEFAULT(0),
+    discount_total   DECIMAL(19,4) NOT NULL DEFAULT(0),
+    total            DECIMAL(19,4) NOT NULL DEFAULT(0),
     created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted          BIT NOT NULL DEFAULT(0)
+    deleted          BIT NOT NULL DEFAULT(0),
+    CONSTRAINT UQ_SalesOrder_Code UNIQUE(order_code),
+    CONSTRAINT FK_SalesOrder_Cashier FOREIGN KEY (cashier_id) REFERENCES dbo.UserAccount(user_id),
+    CONSTRAINT FK_SalesOrder_Customer FOREIGN KEY (customer_id) REFERENCES dbo.Customer(customer_id)
 );
 
 CREATE TABLE dbo.SalesOrderItem (
     order_item_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
     order_id             BIGINT NOT NULL,
     product_id           BIGINT NOT NULL,
+    lot_id               BIGINT NULL,
     qty                  DECIMAL(19,4) NOT NULL CHECK (qty > 0),
     unit_price            DECIMAL(19,4) NOT NULL CHECK (unit_price >= 0),
     applied_markdown_percent   DECIMAL(5,2) NULL CHECK (applied_markdown_percent BETWEEN 0 AND 1),
+    price_override_reason NVARCHAR(200) NULL,
+    line_subtotal        DECIMAL(19,4) NOT NULL DEFAULT(0),
+    line_total           DECIMAL(19,4) NOT NULL DEFAULT(0),
+    is_weight_based      BIT NOT NULL DEFAULT(0),
     created_at           DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     last_modified_at     DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
     deleted              BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_SOI_Order   FOREIGN KEY (order_id)  REFERENCES dbo.SalesOrder(order_id),
-    CONSTRAINT FK_SOI_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id)
-);
+    CONSTRAINT FK_SOI_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id),
+    CONSTRAINT FK_SOI_Lot      FOREIGN KEY (lot_id)     REFERENCES dbo.Lot(lot_id));
 
 /* ==========================================================
    STOCK MOVEMENT LEDGER (APPEND-ONLY)
@@ -353,7 +392,9 @@ CREATE INDEX IX_Inv_Product           ON dbo.Inventory(product_id);
 CREATE INDEX IX_SM_Product_Created    ON dbo.StockMovement(product_id, created_at DESC);
 CREATE INDEX IX_SM_Ref                ON dbo.StockMovement(ref_type, ref_id);
 CREATE INDEX IX_POItem_PO             ON dbo.POItem(po_id);
+CREATE UNIQUE INDEX IX_SalesOrder_OrderCode ON dbo.SalesOrder(order_code);
 CREATE INDEX IX_SalesOrderItem_Order  ON dbo.SalesOrderItem(order_id);
+CREATE INDEX IX_SalesOrderItem_Lot    ON dbo.SalesOrderItem(lot_id) WHERE lot_id IS NOT NULL;
 
 /* ==========================================================
    SEED DATA

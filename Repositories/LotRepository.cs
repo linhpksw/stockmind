@@ -25,10 +25,10 @@ namespace stockmind.Repositories
                 .FirstOrDefaultAsync(s => s.LotId == lotId, cancellationToken);
         }
 
-        public Task<Lot?> GetForProductAsync(long lotId, long productId, CancellationToken cancellationToken)
+        public Task<Lot?> GetForProductAsync(string lotId, long productId, CancellationToken cancellationToken)
         {
             return _dbContext.Lots
-                .FirstOrDefaultAsync(s => s.LotId == lotId && s.ProductId == productId, cancellationToken);
+                .FirstOrDefaultAsync(s => s.LotCode == lotId && s.ProductId == productId, cancellationToken);
         }
         public async Task<IReadOnlyList<Lot>> GetLotsByProductAsync(long productId, CancellationToken ct = default)
         {
