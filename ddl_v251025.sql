@@ -135,16 +135,6 @@ CREATE TABLE dbo.Product (
             OR (is_perishable = 0))
 );
 
-CREATE TABLE dbo.Inventory (
-    inventory_id     BIGINT IDENTITY(1,1) PRIMARY KEY,
-    product_id       BIGINT NOT NULL,
-    on_hand           DECIMAL(19,4) NOT NULL DEFAULT(0),
-    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted          BIT NOT NULL DEFAULT(0),
-    CONSTRAINT FK_Inv_Product  FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id)
-);
-
 CREATE TABLE dbo.Lot (
     lot_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
     product_id  BIGINT NOT NULL,
@@ -349,7 +339,6 @@ GO
 
 CREATE INDEX IX_Lot_Product_Expiry    ON dbo.Lot(product_id, expiry_date);
 CREATE INDEX IX_Lot_Product_Received  ON dbo.Lot(product_id, received_at);
-CREATE INDEX IX_Inv_Product           ON dbo.Inventory(product_id);
 CREATE INDEX IX_SM_Product_Created    ON dbo.StockMovement(product_id, created_at DESC);
 CREATE INDEX IX_SM_Ref                ON dbo.StockMovement(ref_type, ref_id);
 CREATE INDEX IX_POItem_PO             ON dbo.POItem(po_id);

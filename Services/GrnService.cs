@@ -14,7 +14,6 @@ namespace stockmind.Services
         private readonly GrnRepository _grnRepository;
         private readonly ProductRepository _productRepository;
         private readonly PoRepository _poRepository;
-        private readonly InventoryRepository _inventoryRepository;
         private readonly LotRepository _lotRepository;
         private readonly StockMovementRepository _stockMovementRepository;
         private readonly ILogger<GrnService> _logger;
@@ -23,7 +22,6 @@ namespace stockmind.Services
             GrnRepository grnRepository,
             ProductRepository productRepository,
             PoRepository poRepository,
-            InventoryRepository inventoryRepository,
             LotRepository lotRepository,
             StockMovementRepository stockMovementRepository,
             ILogger<GrnService> logger)
@@ -31,7 +29,6 @@ namespace stockmind.Services
             _grnRepository = grnRepository;
             _productRepository = productRepository;
             _poRepository = poRepository;
-            _inventoryRepository = inventoryRepository;
             _lotRepository = lotRepository;
             _stockMovementRepository = stockMovementRepository;
             _logger = logger;
@@ -115,26 +112,6 @@ namespace stockmind.Services
                     await _lotRepository.UpdateAsync(lot, cancellationToken);
                 }
 
-
-                var inventory = await _inventoryRepository.GetByProductIdAsync(product.ProductId, cancellationToken);
-                if (inventory == null)
-                {
-                    inventory = new Inventory
-                    {
-                        ProductId = product.ProductId,
-                        OnHand = item.QtyReceived,
-                        CreatedAt = utcNow,
-                        LastModifiedAt = utcNow,
-                        Deleted = false
-                    };
-                    await _inventoryRepository.AddAsync(inventory, cancellationToken);
-                }
-                else
-                {
-                    inventory.OnHand += item.QtyReceived;
-                    inventory.LastModifiedAt = utcNow;
-                    await _inventoryRepository.UpdateAsync(inventory, cancellationToken);
-                }
 
                 var grnItem = new Grnitem
                 {
