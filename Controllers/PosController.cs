@@ -36,6 +36,28 @@ namespace stockmind.Controllers
 
         #endregion
 
+        [HttpPost("sync")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER")]
+        public async Task<IActionResult> SyncPurchaseOrdersAsync(
+            [FromQuery] ListPurchaseOrdersQueryDto query,
+            CancellationToken cancellationToken)
+        {
+            query.Normalize();
+            var orders = await _poService.SyncFromMasterDataAsync(query.PageNum, query.PageSize, cancellationToken);
+            return Ok(orders);
+        }
+
+        [HttpGet("summary")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER,STORE_STAFF")]
+        public async Task<IActionResult> ListSummariesAsync(
+            [FromQuery] ListPurchaseOrdersQueryDto query,
+            CancellationToken cancellationToken)
+        {
+            query.Normalize();
+            var orders = await _poService.ListSummariesAsync(query.PageNum, query.PageSize, cancellationToken);
+            return Ok(orders);
+        }
+
         #region Get by id
 
         [HttpGet("{id}", Name = "GetPoById")]

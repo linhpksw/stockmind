@@ -30,6 +30,28 @@ namespace stockmind.Controllers
             );
         }
 
+        [HttpPost("sync")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
+        public async Task<IActionResult> SyncGrnsAsync(
+            [FromQuery] ListGrnQueryDto query,
+            CancellationToken cancellationToken)
+        {
+            query.Normalize();
+            var summaries = await _grnService.SyncFromOpenPurchaseOrdersAsync(query.PageNum, query.PageSize, cancellationToken);
+            return Ok(summaries);
+        }
+
+        [HttpGet("summary")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,BUYER,STORE_STAFF")]
+        public async Task<IActionResult> ListSummariesAsync(
+            [FromQuery] ListGrnQueryDto query,
+            CancellationToken cancellationToken)
+        {
+            query.Normalize();
+            var summaries = await _grnService.ListSummariesAsync(query.PageNum, query.PageSize, cancellationToken);
+            return Ok(summaries);
+        }
+
         [HttpGet("{id}", Name = "GetGrnById")]
         [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
         public async Task<IActionResult> GetGrnById(long id, CancellationToken cancellationToken)

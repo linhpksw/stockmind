@@ -143,6 +143,7 @@ namespace stockmind
             builder.Services.ConfigureDynamicProxy();
             builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
 
+            builder.Services.AddScoped<InventoryService>();
             builder.Services.AddScoped<ProductService>();
             builder.Services.AddScoped<ProductRepository>();
             builder.Services.AddScoped<CategoryRepository>();
