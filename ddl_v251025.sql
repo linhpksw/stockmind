@@ -158,16 +158,6 @@ CREATE TABLE dbo.Product (
             OR (is_perishable = 0))
 );
 
-CREATE TABLE dbo.Inventory (
-    inventory_id     BIGINT IDENTITY(1,1) PRIMARY KEY,
-    product_id       BIGINT NOT NULL,
-    on_hand           DECIMAL(19,4) NOT NULL DEFAULT(0),
-    created_at       DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    last_modified_at DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
-    deleted          BIT NOT NULL DEFAULT(0),
-    CONSTRAINT FK_Inv_Product  FOREIGN KEY (product_id)  REFERENCES dbo.Product(product_id)
-);
-
 CREATE TABLE dbo.Lot (
     lot_id      BIGINT IDENTITY(1,1) PRIMARY KEY,
     product_id  BIGINT NOT NULL,
