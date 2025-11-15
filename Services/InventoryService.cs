@@ -53,16 +53,32 @@ public class InventoryService
         {
             lotsByProduct.TryGetValue(product.ProductId, out var productLots);
             var lotDtos = (productLots ?? new List<Models.Lot>())
-                .OrderBy(lot => lot.ExpiryDate)
-                .ThenBy(lot => lot.ReceivedAt)
-                .Select(lot => new InventoryLotSummaryDto
+                .Select(lot =>
                 {
-                    LotId = lot.LotId,
-                    LotCode = lot.LotCode,
-                    ReceivedAt = lot.ReceivedAt,
-                    ExpiryDate = lot.ExpiryDate,
-                    QtyOnHand = lot.QtyOnHand,
-                    UnitCost = lot.Grnitems.OrderByDescending(item => item.CreatedAt).FirstOrDefault()?.UnitCost ?? 0
+                    var latestGrnItem = lot.Grnitems
+                        .OrderByDescending(item => item.CreatedAt)
+                        .FirstOrDefault();
+
+                    var latestReceivedAt = latestGrnItem?.CreatedAt ?? lot.ReceivedAt;
+
+                    return new
+                    {
+                        Lot = lot,
+                        LatestGrnItem = latestGrnItem,
+                        LatestReceivedAt = latestReceivedAt
+                    };
+                })
+                .OrderByDescending(entry => entry.LatestReceivedAt)
+                .ThenByDescending(entry => entry.Lot.LotId)
+                .ThenBy(entry => entry.Lot.ExpiryDate ?? DateOnly.MaxValue)
+                .Select(entry => new InventoryLotSummaryDto
+                {
+                    LotId = entry.Lot.LotId,
+                    LotCode = entry.Lot.LotCode,
+                    ReceivedAt = entry.LatestReceivedAt,
+                    ExpiryDate = entry.Lot.ExpiryDate,
+                    QtyOnHand = entry.Lot.QtyOnHand,
+                    UnitCost = entry.LatestGrnItem?.UnitCost ?? 0
                 })
                 .ToList();
 
