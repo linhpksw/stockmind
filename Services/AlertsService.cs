@@ -78,7 +78,7 @@ namespace stockmind.Services
             _logger.LogDebug("Fetching low stock records.");
 
             var records = await _repo.GetLowStockAsync(ct)
-                          ?? Array.Empty<(string ProductId, decimal OnHand, int MinStock)>();
+                          ?? Array.Empty<(string ProductId, string ProductName, decimal OnHand, int MinStock)>();
 
             var lowStock = records
                 .Where(record => !string.IsNullOrWhiteSpace(record.ProductId))
@@ -95,7 +95,7 @@ namespace stockmind.Services
             _logger.LogDebug("Fetching expiry alerts with threshold {ExpiryThresholdDays} days.", expiryThresholdDays);
 
             var records = await _repo.GetPerishableLotsExpiringWithinAsync(expiryThresholdDays, ct)
-                          ?? Array.Empty<(string ProductId, string LotId, DateOnly ExpiryDate, decimal QtyOnHand)>();
+                          ?? Array.Empty<(string ProductId, string LotId, string LotCode, DateOnly ExpiryDate, decimal QtyOnHand)>();
 
             var expiryAlerts = records
                 .Where(record => !string.IsNullOrWhiteSpace(record.ProductId) && !string.IsNullOrWhiteSpace(record.LotId))
