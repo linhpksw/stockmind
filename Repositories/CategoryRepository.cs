@@ -66,6 +66,24 @@ namespace stockmind.Repositories
             return _dbContext.Categories.AddRangeAsync(categories, cancellationToken);
         }
 
+        public async Task AddRangeWithExplicitIdsAsync(
+            IEnumerable<Category> categories,
+            CancellationToken cancellationToken)
+        {
+            var categoryList = categories.ToList();
+            if (categoryList.Count == 0)
+            {
+                return;
+            }
+
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            await _dbContext.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT dbo.Category ON;", cancellationToken);
+            _dbContext.Categories.AddRange(categoryList);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await _dbContext.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT dbo.Category OFF;", cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken)
         {
             return _dbContext.SaveChangesAsync(cancellationToken);

@@ -126,12 +126,15 @@ namespace stockmind.Services
 
                 var normalizedProfile = row.MarginProfile.Trim();
                 var normalizedSensitivity = row.PriceSensitivity.Trim();
+                var normalizedParentCategoryName = !string.IsNullOrWhiteSpace(row.ParentCategoryName)
+                    ? row.ParentCategoryName.Trim()
+                    : category.Name;
                 var notes = string.IsNullOrWhiteSpace(row.Notes) ? null : row.Notes.Trim();
 
                 if (profilesByParentCategoryId.TryGetValue(category.CategoryId, out var existing))
                 {
-                    existing.ParentCategoryName = category.Name;
-                    existing.MarginProfileName = normalizedProfile;
+                    existing.ParentCategoryName = normalizedParentCategoryName;
+                    existing.Profile = normalizedProfile;
                     existing.PriceSensitivity = normalizedSensitivity;
                     existing.MinMarginPct = min;
                     existing.TargetMarginPct = target;
@@ -145,8 +148,8 @@ namespace stockmind.Services
                 var profile = new MarginProfile
                 {
                     ParentCategoryId = category.CategoryId,
-                    ParentCategoryName = category.Name,
-                    MarginProfileName = normalizedProfile,
+                    ParentCategoryName = normalizedParentCategoryName,
+                    Profile = normalizedProfile,
                     PriceSensitivity = normalizedSensitivity,
                     MinMarginPct = min,
                     TargetMarginPct = target,
@@ -199,7 +202,7 @@ namespace stockmind.Services
                 Id = profile.MarginProfileId,
                 ParentCategoryId = profile.ParentCategoryId,
                 ParentCategoryName = profile.ParentCategoryName,
-                MarginProfile = profile.MarginProfileName,
+                MarginProfile = profile.Profile,
                 PriceSensitivity = profile.PriceSensitivity,
                 MinMarginPct = profile.MinMarginPct,
                 TargetMarginPct = profile.TargetMarginPct,
