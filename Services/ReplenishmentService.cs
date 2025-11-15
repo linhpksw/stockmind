@@ -1,4 +1,5 @@
-﻿using stockmind.DTOs.ReplenishmentSuggestion;
+﻿using Microsoft.EntityFrameworkCore;
+using stockmind.DTOs.ReplenishmentSuggestion;
 using stockmind.Repositories;
 
 namespace stockmind.Services
@@ -6,18 +7,18 @@ namespace stockmind.Services
     public class ReplenishmentService
     {
         private readonly ProductRepository _productRepository;
-        private readonly InventoryRepository _inventoryRepository;
+        private readonly LotRepository _lotRepository;
         private readonly PoRepository _poRepository;
         private readonly StockMovementRepository _stockRepository;
 
         public ReplenishmentService(
             ProductRepository productRepository,
-            InventoryRepository inventoryRepository,
+            LotRepository lotRepository,
             PoRepository poRepository,
             StockMovementRepository stockRepository)
         {
             _productRepository = productRepository;
-            _inventoryRepository = inventoryRepository;
+            _lotRepository = lotRepository;
             _poRepository = poRepository;
             _stockRepository = stockRepository;
         }
@@ -30,7 +31,11 @@ namespace stockmind.Services
 
             // Load data asynchronously
             var products = await _productRepository.GetAllAsync(cancellationToken);
-            var inventories = await _inventoryRepository.GetAllAsync(cancellationToken);
+            var lotBalances = await _lotRepository.Query()
+                .Where(l => !l.Deleted)
+                .GroupBy(l => l.ProductId)
+                .Select(g => new { ProductId = g.Key, Qty = g.Sum(x => x.QtyOnHand) })
+                .ToListAsync(cancellationToken);
             var poItems = await _poRepository.GetOpenOrderItemsAsync(cancellationToken);
             var movements = await _stockRepository.GetSalesMovementsAsync(since, cancellationToken);
 
@@ -54,7 +59,7 @@ namespace stockmind.Services
 
 
             // Group other info
-            var inventoryMap = inventories.ToDictionary(i => i.ProductId, i => i.OnHand);
+            var inventoryMap = lotBalances.ToDictionary(i => i.ProductId, i => i.Qty);
             var onOrderMap = poItems
                 .GroupBy(p => p.ProductId)
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QtyOrdered));

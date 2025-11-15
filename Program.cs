@@ -143,9 +143,6 @@ namespace stockmind
             builder.Services.ConfigureDynamicProxy();
             builder.Host.UseServiceProviderFactory(new DynamicProxyServiceProviderFactory());
 
-            builder.Services.AddScoped<InventoryService>();
-            builder.Services.AddScoped<InventoryRepository>();
-
             builder.Services.AddScoped<ProductService>();
             builder.Services.AddScoped<ProductRepository>();
             builder.Services.AddScoped<CategoryRepository>();
@@ -156,7 +153,6 @@ namespace stockmind
             builder.Services.AddScoped<LotService>();
             builder.Services.AddScoped<LotRepository>();
 
-            builder.Services.AddSingleton<IMapperUtil, MapperUtil>();
             builder.Services.Configure<AlertsOptions>(builder.Configuration.GetSection("Alerts"));
             builder.Services.AddScoped<AlertsService>();
             builder.Services.AddScoped<AlertsRepository>();

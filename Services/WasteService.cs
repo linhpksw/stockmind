@@ -12,20 +12,17 @@ namespace stockmind.Services
     {
         private readonly ProductRepository _productRepository;
         private readonly LotRepository _lotRepository;
-        private readonly InventoryRepository _inventoryRepository;
         private readonly StockMovementService _stockMovementService;
         private readonly ILogger<WasteService> _logger;
 
         public WasteService(
             ProductRepository productRepository,
             LotRepository lotRepository,
-            InventoryRepository inventoryRepository,
             StockMovementService stockMovementService,
             ILogger<WasteService> logger)
         {
             _productRepository = productRepository;
             _lotRepository = lotRepository;
-            _inventoryRepository = inventoryRepository;
             _stockMovementService = stockMovementService;
             _logger = logger;
         }
@@ -70,23 +67,11 @@ namespace stockmind.Services
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "qty exceeds lot on hand" });
             }
 
-            var inventory = await _inventoryRepository.GetByProductIdAsync(product.ProductId, cancellationToken)
-                           ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"inventory:{request.ProductId}" });
-
-            if (inventory.OnHand < qty)
-            {
-                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "qty exceeds inventory on hand" });
-            }
-
             var utcNow = DateTime.UtcNow;
 
             lot.QtyOnHand -= qty;
             lot.LastModifiedAt = utcNow;
             await _lotRepository.UpdateAsync(lot, cancellationToken);
-
-            inventory.OnHand -= qty;
-            inventory.LastModifiedAt = utcNow;
-            await _inventoryRepository.UpdateAsync(inventory, cancellationToken);
 
             var movement = await _stockMovementService.CreateStockMovementAsync(
                 new StockMovement
@@ -96,7 +81,7 @@ namespace stockmind.Services
                     Qty = -qty,
                     Type = "OUT_WASTE",
                     RefType = "WASTE",
-                    RefId = inventory.InventoryId,
+                    RefId = lot.LotId,
                     Reason = reason
                 },
                 cancellationToken);

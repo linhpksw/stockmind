@@ -37,8 +37,6 @@ public partial class Product
 
     public virtual ICollection<Grnitem> Grnitems { get; set; } = new List<Grnitem>();
 
-    public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
-
     public virtual ICollection<Lot> Lots { get; set; } = new List<Lot>();
 
     public virtual ICollection<Poitem> Poitems { get; set; } = new List<Poitem>();
