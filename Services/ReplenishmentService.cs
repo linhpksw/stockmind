@@ -25,7 +25,6 @@ namespace stockmind.Services
 
         public async Task<List<ReplenishmentSuggestionDto>> GetSuggestionsAsync(CancellationToken cancellationToken)
         {
-            const double Z = 1.28;
             var today = DateTime.UtcNow;
             var since = today.AddDays(-30);
 
@@ -77,7 +76,7 @@ namespace stockmind.Services
                 var supplierLeadTime = p.Supplier?.LeadTimeDays ?? 0;
                 var normalizedLeadTime = Math.Max(0, supplierLeadTime);
 
-                double safetyStock = Z * sigmaDaily * Math.Sqrt(normalizedLeadTime);
+                double safetyStock = p.MinStock;
                 double leadTimeDemand = avgDaily * normalizedLeadTime;
                 double rop = leadTimeDemand + safetyStock;
                 double suggestedQty = Math.Max(0, rop - (double)onHand - (double)onOrder);
@@ -96,7 +95,10 @@ namespace stockmind.Services
                 };
             }).ToList();
 
-            return results;
+            return results
+                .OrderBy(r => r.SafetyStock > 0 ? (double)r.OnHand / r.SafetyStock : double.PositiveInfinity)
+                .ThenBy(r => r.ProductId)
+                .ToList();
         }
     }
 }

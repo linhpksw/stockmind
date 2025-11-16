@@ -1,7 +1,7 @@
 ﻿namespace stockmind.DTOs.Alert
 {
-    public record LowStockDto(string ProductId, decimal OnHand, int MinStock);
-    public record ExpirySoonDto(string ProductId, string LotId, int DaysToExpiry);
+    public record LowStockDto(string ProductId, string ProductName, decimal OnHand, int MinStock);
+    public record ExpirySoonDto(string ProductId, string LotId, string? LotCode, int DaysToExpiry);
     public record SlowMoverDto(string ProductId, int WindowDays, decimal UnitsSold);
 
     public class AlertsAggregateDto
