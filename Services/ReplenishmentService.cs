@@ -64,7 +64,11 @@ namespace stockmind.Services
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.QtyOrdered));
 
             // Calculate ROP per product
-            var results = products.Select(p =>
+            var productIdsWithLots = new HashSet<long>(lotBalances.Select(lb => lb.ProductId));
+
+            var results = products
+                .Where(p => productIdsWithLots.Contains(p.ProductId))
+                .Select(p =>
             {
                 inventoryMap.TryGetValue(p.ProductId, out decimal onHand);
                 onOrderMap.TryGetValue(p.ProductId, out decimal onOrder);
@@ -93,7 +97,9 @@ namespace stockmind.Services
                     ROP = Math.Round(rop, 2),
                     SuggestedQty = Math.Round(suggestedQty, 2)
                 };
-            }).ToList();
+            })
+            .Where(suggestion => suggestion.SuggestedQty > 0)
+            .ToList();
 
             return results
                 .OrderBy(r => r.SafetyStock > 0 ? (double)r.OnHand / r.SafetyStock : double.PositiveInfinity)
