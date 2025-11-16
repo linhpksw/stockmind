@@ -62,4 +62,17 @@ public class SalesOrderRepository
         var normalized = orderCode.Trim();
         return _dbContext.SalesOrders.AnyAsync(order => order.OrderCode == normalized && !order.Deleted, cancellationToken);
     }
+
+    public Task<bool> HasOrdersForCustomerAsync(long customerId, CancellationToken cancellationToken)
+    {
+        return _dbContext.SalesOrders
+            .AsNoTracking()
+            .AnyAsync(order => !order.Deleted && order.CustomerId == customerId, cancellationToken);
+    }
+
+    public async Task CancelPendingAsync(SalesOrderPending pending, CancellationToken cancellationToken)
+    {
+        _dbContext.SalesOrderPendings.Update(pending);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

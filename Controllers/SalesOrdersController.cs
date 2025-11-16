@@ -77,6 +77,15 @@ public class SalesOrdersController : ControllerBase
         return Ok(new ResponseModel<PendingSalesOrderStatusDto>(status));
     }
 
+    [HttpDelete("pending/{id:long}")]
+    [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,STORE_STAFF,CASHIER")]
+    public async Task<IActionResult> CancelPendingOrderAsync([FromRoute] long id, CancellationToken cancellationToken)
+    {
+        var (userId, _) = ResolveCurrentUser();
+        await _salesOrderService.CancelPendingOrderAsync(id, userId, cancellationToken);
+        return NoContent();
+    }
+
     private (long userId, string fullName) ResolveCurrentUser()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)

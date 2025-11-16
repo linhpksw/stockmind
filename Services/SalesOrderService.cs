@@ -713,6 +713,26 @@ public class SalesOrderService
         };
     }
 
+    public async Task CancelPendingOrderAsync(long pendingId, long cashierId, CancellationToken cancellationToken)
+    {
+        var pending = await _salesOrderRepository.GetPendingByIdAsync(pendingId, cancellationToken)
+                      ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"pendingId={pendingId}" });
+
+        if (!string.Equals(pending.Status, "PENDING", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (pending.CashierId != cashierId)
+        {
+            throw new BizAuthorizationException(ErrorCode4xx.Forbidden, new[] { "pendingOrder" });
+        }
+
+        pending.Status = "CANCELLED";
+        pending.ConfirmedAt = null;
+        await _salesOrderRepository.CancelPendingAsync(pending, cancellationToken);
+    }
+
     private static string EscapeLikePattern(string input)
     {
         if (string.IsNullOrEmpty(input))

@@ -11,11 +11,16 @@ namespace stockmind.Services;
 public class CustomerService
 {
     private readonly CustomerRepository _customerRepository;
+    private readonly SalesOrderRepository _salesOrderRepository;
     private readonly ILogger<CustomerService> _logger;
 
-    public CustomerService(CustomerRepository customerRepository, ILogger<CustomerService> logger)
+    public CustomerService(
+        CustomerRepository customerRepository,
+        SalesOrderRepository salesOrderRepository,
+        ILogger<CustomerService> logger)
     {
         _customerRepository = customerRepository;
+        _salesOrderRepository = salesOrderRepository;
         _logger = logger;
     }
 
@@ -45,9 +50,24 @@ public class CustomerService
         ValidatePhone(phone);
         ValidateEmail(email);
 
+        if (!string.IsNullOrEmpty(email))
+        {
+            var existingByEmail = await _customerRepository.FindByEmailAsync(email, cancellationToken);
+            if (existingByEmail != null)
+            {
+                throw new BizDataAlreadyExistsException(ErrorCode4xx.DataAlreadyExists, new[] { "email" });
+            }
+        }
+
         var existingByPhone = await _customerRepository.FindByPhoneAsync(phone, cancellationToken);
         if (existingByPhone != null)
         {
+            var hasOrders = await _salesOrderRepository.HasOrdersForCustomerAsync(existingByPhone.CustomerId, cancellationToken);
+            if (hasOrders)
+            {
+                throw new BizDataAlreadyExistsException(ErrorCode4xx.DataAlreadyExists, new[] { "phoneNumber" });
+            }
+
             existingByPhone.FullName = fullName;
             existingByPhone.Email = email;
             existingByPhone.LoyaltyCode = string.IsNullOrWhiteSpace(existingByPhone.LoyaltyCode)
@@ -59,15 +79,6 @@ public class CustomerService
             var dto = CustomerMapper.ToDto(updated);
             dto.IsUpdated = true;
             return dto;
-        }
-
-        if (!string.IsNullOrEmpty(email))
-        {
-            var existingByEmail = await _customerRepository.FindByEmailAsync(email, cancellationToken);
-            if (existingByEmail != null)
-            {
-                throw new BizDataAlreadyExistsException(ErrorCode4xx.DataAlreadyExists, new[] { "email" });
-            }
         }
 
         var customer = new Customer
