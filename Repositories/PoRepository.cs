@@ -24,6 +24,11 @@ namespace stockmind.Repositories
             return await _context.Pos
                 .Include(p => p.Supplier)
                 .Include(p => p.Poitems)
+                    .ThenInclude(item => item.Product)
+                        .ThenInclude(product => product.Supplier)
+                .Include(p => p.Poitems)
+                    .ThenInclude(item => item.Product)
+                        .ThenInclude(product => product.Category)
                 .FirstOrDefaultAsync(p => p.PoId == id, cancellationToken);
         }
 
