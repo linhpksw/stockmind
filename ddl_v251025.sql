@@ -269,7 +269,20 @@ CREATE TABLE dbo.SalesOrderItem (
     deleted              BIT NOT NULL DEFAULT(0),
     CONSTRAINT FK_SOI_Order   FOREIGN KEY (order_id)  REFERENCES dbo.SalesOrder(order_id),
     CONSTRAINT FK_SOI_Product FOREIGN KEY (product_id) REFERENCES dbo.Product(product_id),
-    CONSTRAINT FK_SOI_Lot      FOREIGN KEY (lot_id)     REFERENCES dbo.Lot(lot_id));
+    CONSTRAINT FK_SOI_Lot      FOREIGN KEY (lot_id)     REFERENCES dbo.Lot(lot_id)
+);
+
+CREATE TABLE dbo.SalesOrderPending (
+    pending_id        BIGINT IDENTITY(1,1) PRIMARY KEY,
+    cashier_id        BIGINT NOT NULL,
+    customer_id       BIGINT NOT NULL,
+    payload_json      NVARCHAR(MAX) NOT NULL,
+    confirmation_token UNIQUEIDENTIFIER NOT NULL,
+    expires_at        DATETIME2(0) NOT NULL,
+    created_at        DATETIME2(0) NOT NULL DEFAULT SYSDATETIME(),
+    CONSTRAINT FK_SOP_Cashier FOREIGN KEY (cashier_id) REFERENCES dbo.UserAccount(user_id),
+    CONSTRAINT FK_SOP_Customer FOREIGN KEY (customer_id) REFERENCES dbo.Customer(customer_id)
+);
 
 /* ==========================================================
    STOCK MOVEMENT LEDGER (APPEND-ONLY)
@@ -384,6 +397,7 @@ CREATE INDEX IX_POItem_PO             ON dbo.POItem(po_id);
 CREATE UNIQUE INDEX IX_SalesOrder_OrderCode ON dbo.SalesOrder(order_code);
 CREATE INDEX IX_SalesOrderItem_Order  ON dbo.SalesOrderItem(order_id);
 CREATE INDEX IX_SalesOrderItem_Lot    ON dbo.SalesOrderItem(lot_id) WHERE lot_id IS NOT NULL;
+CREATE UNIQUE INDEX UX_SalesOrderPending_Token ON dbo.SalesOrderPending(confirmation_token);
 
 /* ==========================================================
    SEED DATA

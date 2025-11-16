@@ -154,6 +154,9 @@ namespace stockmind
             builder.Services.AddScoped<LotService>();
             builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<LotSaleDecisionRepository>();
+            builder.Services.AddScoped<CustomerRepository>();
+            builder.Services.AddScoped<CustomerService>();
+            builder.Services.AddScoped<SalesOrderService>();
 
             builder.Services.Configure<AlertsOptions>(builder.Configuration.GetSection("Alerts"));
             builder.Services.AddScoped<AlertsService>();
