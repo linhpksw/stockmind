@@ -14,7 +14,8 @@ public static class CustomerMapper
             Email = customer.Email,
             LoyaltyCode = customer.LoyaltyCode,
             LoyaltyPoints = customer.LoyaltyPoints,
-            CreatedAt = customer.CreatedAt
+            CreatedAt = customer.CreatedAt,
+            IsUpdated = false
         };
     }
 }

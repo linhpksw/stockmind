@@ -21,9 +21,22 @@ public class CustomerRepository
         }
 
         return _dbContext.Customers
-            .AsNoTracking()
             .FirstOrDefaultAsync(
                 customer => !customer.Deleted && customer.PhoneNumber == normalized,
+                cancellationToken);
+    }
+
+    public Task<Customer?> FindByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var normalized = Normalize(email);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return Task.FromResult<Customer?>(null);
+        }
+
+        return _dbContext.Customers
+            .FirstOrDefaultAsync(
+                customer => !customer.Deleted && customer.Email != null && customer.Email == normalized,
                 cancellationToken);
     }
 
@@ -63,6 +76,22 @@ public class CustomerRepository
             .AsNoTracking()
             .Where(customer => !customer.Deleted)
             .Where(customer => customer.PhoneNumber == normalized)
+            .Where(customer => !excludeCustomerId.HasValue || customer.CustomerId != excludeCustomerId.Value)
+            .AnyAsync(cancellationToken);
+    }
+
+    public Task<bool> ExistsByEmailAsync(string email, long? excludeCustomerId, CancellationToken cancellationToken)
+    {
+        var normalized = Normalize(email);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return Task.FromResult(false);
+        }
+
+        return _dbContext.Customers
+            .AsNoTracking()
+            .Where(customer => !customer.Deleted)
+            .Where(customer => customer.Email != null && customer.Email == normalized)
             .Where(customer => !excludeCustomerId.HasValue || customer.CustomerId != excludeCustomerId.Value)
             .AnyAsync(cancellationToken);
     }

@@ -195,14 +195,10 @@ public class SalesOrderService
 
         ApplyLoyaltyAdjustments(draft, customer, request.LoyaltyPointsToRedeem);
 
-        if (request.LoyaltyPointsToRedeem > 0)
+        var requiresConfirmation = customer != null;
+        if (requiresConfirmation)
         {
-            if (customer == null)
-            {
-                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "customerRequired" });
-            }
-
-            if (string.IsNullOrWhiteSpace(customer.Email))
+            if (string.IsNullOrWhiteSpace(customer!.Email))
             {
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "customerEmailRequired" });
             }
@@ -701,6 +697,40 @@ public class SalesOrderService
     {
         var trimmed = baseUrl.TrimEnd('/');
         return $"{trimmed}/api/sales-orders/pending/{token}/confirm";
+    }
+
+    public async Task<PendingSalesOrderStatusDto> GetPendingStatusAsync(long pendingId, CancellationToken cancellationToken)
+    {
+        var pending = await _salesOrderRepository.GetPendingByIdAsync(pendingId, cancellationToken)
+                      ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"pendingId={pendingId}" });
+
+        return new PendingSalesOrderStatusDto
+        {
+            PendingId = pending.PendingId,
+            Status = pending.Status,
+            ExpiresAt = pending.ExpiresAt,
+            ConfirmedAt = pending.ConfirmedAt
+        };
+    }
+
+    public async Task CancelPendingOrderAsync(long pendingId, long cashierId, CancellationToken cancellationToken)
+    {
+        var pending = await _salesOrderRepository.GetPendingByIdAsync(pendingId, cancellationToken)
+                      ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"pendingId={pendingId}" });
+
+        if (!string.Equals(pending.Status, "PENDING", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (pending.CashierId != cashierId)
+        {
+            throw new BizAuthorizationException(ErrorCode4xx.Forbidden, new[] { "pendingOrder" });
+        }
+
+        pending.Status = "CANCELLED";
+        pending.ConfirmedAt = null;
+        await _salesOrderRepository.CancelPendingAsync(pending, cancellationToken);
     }
 
     private static string EscapeLikePattern(string input)
