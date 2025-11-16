@@ -15,18 +15,25 @@ namespace stockmind.Repositories
 
         public async Task<IReadOnlyList<(string ProductId, string ProductName, decimal OnHand, int MinStock)>> GetLowStockAsync(CancellationToken ct)
         {
-            var query = _dbContext.Products
-                .Where(product => !product.Deleted)
-                .Select(product => new
+            var lotSummaryQuery = _dbContext.Lots
+                .Where(lot => !lot.Deleted)
+                .GroupBy(lot => lot.ProductId)
+                .Select(group => new
                 {
-                    product.ProductId,
-                    product.Name,
-                    product.MinStock,
-                    OnHand = _dbContext.Lots
-                        .Where(lot => lot.ProductId == product.ProductId && !lot.Deleted)
-                        .Sum(lot => (decimal?)lot.QtyOnHand) ?? 0m
-                })
-                .Where(x => x.OnHand <= (decimal)x.MinStock);
+                    ProductId = group.Key,
+                    OnHand = group.Sum(lot => lot.QtyOnHand)
+                });
+
+            var query = from summary in lotSummaryQuery
+                        join product in _dbContext.Products on summary.ProductId equals product.ProductId
+                        where !product.Deleted && summary.OnHand <= (decimal)product.MinStock
+                        select new
+                        {
+                            product.ProductId,
+                            product.Name,
+                            product.MinStock,
+                            summary.OnHand
+                        };
 
             var list = await query.AsNoTracking().ToListAsync(ct);
             return list.Select(x => (x.ProductId.ToString(), x.Name, x.OnHand, x.MinStock)).ToList();
