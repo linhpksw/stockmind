@@ -164,7 +164,7 @@ public class SalesOrderService
                 TargetMarginPct = targetMarginPct,
                 MinMarginPct = minMarginPct,
                 UnitPrice = unitPrice,
-                DiscountPercent = decision?.DiscountPercent ?? 0m,
+                DiscountPercent = decision is { IsApplied: true } ? decision.DiscountPercent : 0m,
                 SuggestedQty = replenishment?.SuggestedQty,
                 HasPricingGaps = hasPricingGaps
             });
@@ -356,7 +356,7 @@ public class SalesOrderService
         var (targetMarginPct, _) = ResolveMargins(product);
         var unitCost = ResolveUnitCost(lot);
         var unitPrice = CalculateUnitPrice(unitCost, targetMarginPct);
-        var discount = decision?.DiscountPercent ?? 0m;
+        var discount = decision is { IsApplied: true } ? decision.DiscountPercent : 0m;
 
         var subtotal = decimal.Round(unitPrice * qty, 0, MidpointRounding.AwayFromZero);
         var lineDiscount = discount <= 0 ? 0 : decimal.Round(subtotal * discount, 0, MidpointRounding.AwayFromZero);
@@ -610,7 +610,7 @@ public class SalesOrderService
             return 0;
         }
 
-        var price = unitCost * (1 + marginRate);
+        var price = unitCost / (1 - marginRate);
         return decimal.Round(price, 0, MidpointRounding.AwayFromZero);
     }
 
