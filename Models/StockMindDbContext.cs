@@ -11,53 +11,49 @@ public partial class StockMindDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Category> Categories { get; set; } = null!;
+    public virtual DbSet<Category> Categories { get; set; }
 
-    public virtual DbSet<Customer> Customers { get; set; } = null!;
+    public virtual DbSet<Grn> Grns { get; set; }
 
-    public virtual DbSet<Grn> Grns { get; set; } = null!;
+    public virtual DbSet<Grnitem> Grnitems { get; set; }
 
-    public virtual DbSet<Grnitem> Grnitems { get; set; } = null!;
+    public virtual DbSet<Lot> Lots { get; set; }
 
-    public virtual DbSet<Lot> Lots { get; set; } = null!;
+    public virtual DbSet<LotSaleDecision> LotSaleDecisions { get; set; }
 
-    public virtual DbSet<LotSaleDecision> LotSaleDecisions { get; set; } = null!;
+    public virtual DbSet<MarginProfile> MarginProfiles { get; set; }
 
-    public virtual DbSet<MarginProfile> MarginProfiles { get; set; } = null!;
+    public virtual DbSet<MarkdownRule> MarkdownRules { get; set; }
 
-    public virtual DbSet<MarkdownRule> MarkdownRules { get; set; } = null!;
+    public virtual DbSet<Po> Pos { get; set; }
 
-    public virtual DbSet<Po> Pos { get; set; } = null!;
+    public virtual DbSet<Poitem> Poitems { get; set; }
 
-    public virtual DbSet<Poitem> Poitems { get; set; } = null!;
+    public virtual DbSet<Product> Products { get; set; }
 
-    public virtual DbSet<Product> Products { get; set; } = null!;
+    public virtual DbSet<ReplenishmentSuggestion> ReplenishmentSuggestions { get; set; }
 
-    public virtual DbSet<ReplenishmentSuggestion> ReplenishmentSuggestions { get; set; } = null!;
+    public virtual DbSet<Role> Roles { get; set; }
 
-    public virtual DbSet<Role> Roles { get; set; } = null!;
+    public virtual DbSet<SalesOrder> SalesOrders { get; set; }
 
-    public virtual DbSet<SalesOrder> SalesOrders { get; set; } = null!;
+    public virtual DbSet<SalesOrderItem> SalesOrderItems { get; set; }
 
-    public virtual DbSet<SalesOrderItem> SalesOrderItems { get; set; } = null!;
+    public virtual DbSet<StockMovement> StockMovements { get; set; }
 
-    public virtual DbSet<SalesOrderPending> SalesOrderPendings { get; set; } = null!;
+    public virtual DbSet<Supplier> Suppliers { get; set; }
 
-    public virtual DbSet<StockMovement> StockMovements { get; set; } = null!;
-
-    public virtual DbSet<Supplier> Suppliers { get; set; } = null!;
-
-    public virtual DbSet<UserAccount> UserAccounts { get; set; } = null!;
+    public virtual DbSet<UserAccount> UserAccounts { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B446BB53CB");
+            entity.HasKey(e => e.CategoryId).HasName("PK__Category__D54EE9B4A8DE09B5");
 
             entity.ToTable("Category");
 
-            entity.HasIndex(e => e.Code, "UQ__Category__357D4CF95CE8F433").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Category__357D4CF9CCAF2223").IsUnique();
 
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
             entity.Property(e => e.Code)
@@ -122,45 +118,9 @@ public partial class StockMindDbContext : DbContext
                 .HasColumnName("phone_number");
         });
 
-        modelBuilder.Entity<Customer>(entity =>
-        {
-            entity.HasKey(e => e.CustomerId).HasName("PK__Customer__CD65CB85EC6E8248");
-
-            entity.ToTable("Customer");
-
-            entity.HasIndex(e => e.LoyaltyCode, "UQ__Customer__675C0E5AA4F4B678").IsUnique();
-
-            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("created_at");
-            entity.Property(e => e.Deleted).HasColumnName("deleted");
-            entity.Property(e => e.Email)
-                .HasMaxLength(256)
-                .HasColumnName("email");
-            entity.Property(e => e.FullName)
-                .HasMaxLength(200)
-                .HasColumnName("full_name");
-            entity.Property(e => e.LastModifiedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("last_modified_at");
-            entity.Property(e => e.LoyaltyCode)
-                .HasMaxLength(64)
-                .HasColumnName("loyalty_code");
-            entity.Property(e => e.LoyaltyPoints).HasColumnName("loyalty_points");
-            entity.Property(e => e.Notes)
-                .HasMaxLength(500)
-                .HasColumnName("notes");
-            entity.Property(e => e.PhoneNumber)
-                .HasMaxLength(15)
-                .HasColumnName("phone_number");
-        });
-
         modelBuilder.Entity<Grn>(entity =>
         {
-            entity.HasKey(e => e.GrnId).HasName("PK__GRN__39D8A22AAA305723");
+            entity.HasKey(e => e.GrnId).HasName("PK__GRN__39D8A22A4F9B463B");
 
             entity.ToTable("GRN");
 
@@ -192,7 +152,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Grnitem>(entity =>
         {
-            entity.HasKey(e => e.GrnItemId).HasName("PK__GRNItem__92DEE4E601887422");
+            entity.HasKey(e => e.GrnItemId).HasName("PK__GRNItem__92DEE4E6080C689C");
 
             entity.ToTable("GRNItem", tb => tb.HasTrigger("TR_GRNItem_RequireExpiry_ForPerishable"));
 
@@ -237,7 +197,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Lot>(entity =>
         {
-            entity.HasKey(e => e.LotId).HasName("PK__Lot__38CAA92BFD0527CC");
+            entity.HasKey(e => e.LotId).HasName("PK__Lot__38CAA92B20C61CC2");
 
             entity.ToTable("Lot");
 
@@ -278,7 +238,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<LotSaleDecision>(entity =>
         {
-            entity.HasKey(e => e.LotSaleDecisionId).HasName("PK__LotSaleD__6CC211DB66014555");
+            entity.HasKey(e => e.LotSaleDecisionId).HasName("PK__LotSaleD__6CC211DB2DB60AEF");
 
             entity.ToTable("LotSaleDecision");
 
@@ -306,7 +266,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<MarginProfile>(entity =>
         {
-            entity.HasKey(e => e.MarginProfileId).HasName("PK__MarginPr__7F927B69E760CA58");
+            entity.HasKey(e => e.MarginProfileId).HasName("PK__MarginPr__7F927B699E02D516");
 
             entity.ToTable("MarginProfile");
 
@@ -355,7 +315,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<MarkdownRule>(entity =>
         {
-            entity.HasKey(e => e.MarkdownRuleId).HasName("PK__Markdown__6A111CE1A9B447BF");
+            entity.HasKey(e => e.MarkdownRuleId).HasName("PK__Markdown__6A111CE1C14902BC");
 
             entity.ToTable("MarkdownRule");
 
@@ -385,7 +345,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Po>(entity =>
         {
-            entity.HasKey(e => e.PoId).HasName("PK__PO__368DA7F0728FE5C1");
+            entity.HasKey(e => e.PoId).HasName("PK__PO__368DA7F0CEBD825F");
 
             entity.ToTable("PO");
 
@@ -414,7 +374,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Poitem>(entity =>
         {
-            entity.HasKey(e => e.PoItemId).HasName("PK__POItem__E2A583055A173BCD");
+            entity.HasKey(e => e.PoItemId).HasName("PK__POItem__E2A5830518699F76");
 
             entity.ToTable("POItem");
 
@@ -453,11 +413,11 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Product>(entity =>
         {
-            entity.HasKey(e => e.ProductId).HasName("PK__Product__47027DF50EB51EE9");
+            entity.HasKey(e => e.ProductId).HasName("PK__Product__47027DF5A3BE899B");
 
             entity.ToTable("Product");
 
-            entity.HasIndex(e => e.SkuCode, "UQ__Product__843F428FF69C9A99").IsUnique();
+            entity.HasIndex(e => e.SkuCode, "UQ__Product__843F428F610DB2E0").IsUnique();
 
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.CategoryId).HasColumnName("category_id");
@@ -502,7 +462,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<ReplenishmentSuggestion>(entity =>
         {
-            entity.HasKey(e => e.ReplId).HasName("PK__Replenis__0FA1E662E621E918");
+            entity.HasKey(e => e.ReplId).HasName("PK__Replenis__0FA1E662D7FF4A60");
 
             entity.ToTable("ReplenishmentSuggestion");
 
@@ -552,11 +512,11 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC5A774DE2");
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CC0E8CC9A3");
 
             entity.ToTable("Role");
 
-            entity.HasIndex(e => e.Code, "UQ__Role__357D4CF92144C289").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__Role__357D4CF9ACDE2804").IsUnique();
 
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.Code)
@@ -579,60 +539,27 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<SalesOrder>(entity =>
         {
-            entity.HasKey(e => e.OrderId).HasName("PK__SalesOrd__465962297E0BCCFF");
+            entity.HasKey(e => e.OrderId).HasName("PK__SalesOrd__4659622926A41D9F");
 
             entity.ToTable("SalesOrder");
 
-            entity.HasIndex(e => e.OrderCode, "IX_SalesOrder_OrderCode").IsUnique();
-
-            entity.HasIndex(e => e.OrderCode, "UQ_SalesOrder_Code").IsUnique();
-
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.CashierId).HasColumnName("cashier_id");
-            entity.Property(e => e.CashierNotes)
-                .HasMaxLength(500)
-                .HasColumnName("cashier_notes");
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
                 .HasColumnName("created_at");
-            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
             entity.Property(e => e.Deleted).HasColumnName("deleted");
-            entity.Property(e => e.DiscountTotal)
-                .HasColumnType("decimal(19, 4)")
-                .HasColumnName("discount_total");
-            entity.Property(e => e.ItemsCount).HasColumnName("items_count");
             entity.Property(e => e.LastModifiedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
                 .HasColumnName("last_modified_at");
-            entity.Property(e => e.OrderCode)
-                .HasMaxLength(32)
-                .HasColumnName("order_code");
-            entity.Property(e => e.Subtotal)
-                .HasColumnType("decimal(19, 4)")
-                .HasColumnName("subtotal");
-            entity.Property(e => e.Total)
-                .HasColumnType("decimal(19, 4)")
-                .HasColumnName("total");
-
-            entity.HasOne(d => d.Cashier).WithMany(p => p.SalesOrders)
-                .HasForeignKey(d => d.CashierId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SalesOrder_Cashier");
-
-            entity.HasOne(d => d.Customer).WithMany(p => p.SalesOrders)
-                .HasForeignKey(d => d.CustomerId)
-                .HasConstraintName("FK_SalesOrder_Customer");
         });
 
         modelBuilder.Entity<SalesOrderItem>(entity =>
         {
-            entity.HasKey(e => e.OrderItemId).HasName("PK__SalesOrd__3764B6BC3EF7E273");
+            entity.HasKey(e => e.OrderItemId).HasName("PK__SalesOrd__3764B6BC5F99E8F8");
 
             entity.ToTable("SalesOrderItem");
-
-            entity.HasIndex(e => e.LotId, "IX_SalesOrderItem_Lot").HasFilter("([lot_id] IS NOT NULL)");
 
             entity.HasIndex(e => e.OrderId, "IX_SalesOrderItem_Order");
 
@@ -645,22 +572,11 @@ public partial class StockMindDbContext : DbContext
                 .HasDefaultValueSql("(sysdatetime())")
                 .HasColumnName("created_at");
             entity.Property(e => e.Deleted).HasColumnName("deleted");
-            entity.Property(e => e.IsWeightBased).HasColumnName("is_weight_based");
             entity.Property(e => e.LastModifiedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())")
                 .HasColumnName("last_modified_at");
-            entity.Property(e => e.LineSubtotal)
-                .HasColumnType("decimal(19, 4)")
-                .HasColumnName("line_subtotal");
-            entity.Property(e => e.LineTotal)
-                .HasColumnType("decimal(19, 4)")
-                .HasColumnName("line_total");
-            entity.Property(e => e.LotId).HasColumnName("lot_id");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.PriceOverrideReason)
-                .HasMaxLength(200)
-                .HasColumnName("price_override_reason");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
             entity.Property(e => e.Qty)
                 .HasColumnType("decimal(19, 4)")
@@ -668,10 +584,6 @@ public partial class StockMindDbContext : DbContext
             entity.Property(e => e.UnitPrice)
                 .HasColumnType("decimal(19, 4)")
                 .HasColumnName("unit_price");
-
-            entity.HasOne(d => d.Lot).WithMany(p => p.SalesOrderItems)
-                .HasForeignKey(d => d.LotId)
-                .HasConstraintName("FK_SOI_Lot");
 
             entity.HasOne(d => d.Order).WithMany(p => p.SalesOrderItems)
                 .HasForeignKey(d => d.OrderId)
@@ -684,41 +596,9 @@ public partial class StockMindDbContext : DbContext
                 .HasConstraintName("FK_SOI_Product");
         });
 
-        modelBuilder.Entity<SalesOrderPending>(entity =>
-        {
-            entity.HasKey(e => e.PendingId).HasName("PK__SalesOrd__D12229E5A6E5CF84");
-
-            entity.ToTable("SalesOrderPending");
-
-            entity.HasIndex(e => e.ConfirmationToken, "UX_SalesOrderPending_Token").IsUnique();
-
-            entity.Property(e => e.PendingId).HasColumnName("pending_id");
-            entity.Property(e => e.CashierId).HasColumnName("cashier_id");
-            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
-            entity.Property(e => e.PayloadJson).HasColumnName("payload_json");
-            entity.Property(e => e.ConfirmationToken).HasColumnName("confirmation_token");
-            entity.Property(e => e.ExpiresAt)
-                .HasPrecision(0)
-                .HasColumnName("expires_at");
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())")
-                .HasColumnName("created_at");
-
-            entity.HasOne(d => d.Cashier).WithMany()
-                .HasForeignKey(d => d.CashierId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SOP_Cashier");
-
-            entity.HasOne(d => d.Customer).WithMany()
-                .HasForeignKey(d => d.CustomerId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SOP_Customer");
-        });
-
         modelBuilder.Entity<StockMovement>(entity =>
         {
-            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D1022A92E3E81");
+            entity.HasKey(e => e.MovementId).HasName("PK__StockMov__AB1D1022DBE96EBF");
 
             entity.ToTable("StockMovement", tb => tb.HasTrigger("TR_StockMovement_NoUpdateDelete"));
 
@@ -766,7 +646,7 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<Supplier>(entity =>
         {
-            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E8135602C7");
+            entity.HasKey(e => e.SupplierId).HasName("PK__Supplier__6EE594E8E50DBBD5");
 
             entity.ToTable("Supplier");
 
@@ -794,15 +674,15 @@ public partial class StockMindDbContext : DbContext
 
         modelBuilder.Entity<UserAccount>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__UserAcco__B9BE370F576D81DF");
+            entity.HasKey(e => e.UserId).HasName("PK__UserAcco__B9BE370F66451FBF");
 
             entity.ToTable("UserAccount");
 
-            entity.HasIndex(e => e.PhoneNumber, "UQ__UserAcco__A1936A6BD92B123C").IsUnique();
+            entity.HasIndex(e => e.PhoneNumber, "UQ__UserAcco__A1936A6BD798A2F6").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__UserAcco__AB6E6164E3A65F4D").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__UserAcco__AB6E61647BE167C9").IsUnique();
 
-            entity.HasIndex(e => e.Username, "UQ__UserAcco__F3DBC572CD45BCE0").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__UserAcco__F3DBC5725C230135").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.CreatedAt)
@@ -846,7 +726,7 @@ public partial class StockMindDbContext : DbContext
                         .HasConstraintName("FK__UserRole__user_i__46E78A0C"),
                     j =>
                     {
-                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__6EDEA153A87D30F1");
+                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__6EDEA153E042A0AC");
                         j.ToTable("UserRole");
                         j.IndexerProperty<long>("UserId").HasColumnName("user_id");
                         j.IndexerProperty<long>("RoleId").HasColumnName("role_id");

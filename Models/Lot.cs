@@ -29,7 +29,5 @@ public partial class Lot
 
     public virtual Product Product { get; set; } = null!;
 
-    public virtual ICollection<SalesOrderItem> SalesOrderItems { get; set; } = new List<SalesOrderItem>();
-
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 }
