@@ -27,6 +27,10 @@ public partial class UserAccount
 
     public virtual ICollection<Grn> Grns { get; set; } = new List<Grn>();
 
+    public virtual ICollection<SalesOrderPending> SalesOrderPendings { get; set; } = new List<SalesOrderPending>();
+
+    public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
+
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
 
     public virtual ICollection<Role> Roles { get; set; } = new List<Role>();

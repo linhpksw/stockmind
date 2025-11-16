@@ -154,10 +154,16 @@ namespace stockmind
             builder.Services.AddScoped<LotService>();
             builder.Services.AddScoped<LotRepository>();
             builder.Services.AddScoped<LotSaleDecisionRepository>();
+            builder.Services.AddScoped<CustomerRepository>();
+            builder.Services.AddScoped<CustomerService>();
+            builder.Services.AddScoped<SalesOrderRepository>();
+            builder.Services.AddScoped<SalesOrderService>();
 
             builder.Services.Configure<AlertsOptions>(builder.Configuration.GetSection("Alerts"));
+            builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
             builder.Services.AddScoped<AlertsService>();
             builder.Services.AddScoped<AlertsRepository>();
+            builder.Services.AddScoped<EmailService>();
 
 
             var app = builder.Build();
