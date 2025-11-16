@@ -195,14 +195,10 @@ public class SalesOrderService
 
         ApplyLoyaltyAdjustments(draft, customer, request.LoyaltyPointsToRedeem);
 
-        if (request.LoyaltyPointsToRedeem > 0)
+        var requiresConfirmation = customer != null;
+        if (requiresConfirmation)
         {
-            if (customer == null)
-            {
-                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "customerRequired" });
-            }
-
-            if (string.IsNullOrWhiteSpace(customer.Email))
+            if (string.IsNullOrWhiteSpace(customer!.Email))
             {
                 throw new BizException(ErrorCode4xx.InvalidInput, new[] { "customerEmailRequired" });
             }
@@ -701,6 +697,20 @@ public class SalesOrderService
     {
         var trimmed = baseUrl.TrimEnd('/');
         return $"{trimmed}/api/sales-orders/pending/{token}/confirm";
+    }
+
+    public async Task<PendingSalesOrderStatusDto> GetPendingStatusAsync(long pendingId, CancellationToken cancellationToken)
+    {
+        var pending = await _salesOrderRepository.GetPendingByIdAsync(pendingId, cancellationToken)
+                      ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"pendingId={pendingId}" });
+
+        return new PendingSalesOrderStatusDto
+        {
+            PendingId = pending.PendingId,
+            Status = pending.Status,
+            ExpiresAt = pending.ExpiresAt,
+            ConfirmedAt = pending.ConfirmedAt
+        };
     }
 
     private static string EscapeLikePattern(string input)

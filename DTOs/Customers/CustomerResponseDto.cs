@@ -15,4 +15,6 @@ public class CustomerResponseDto
     public int LoyaltyPoints { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public bool IsUpdated { get; set; }
 }

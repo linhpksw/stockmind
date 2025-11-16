@@ -45,10 +45,29 @@ public class CustomerService
         ValidatePhone(phone);
         ValidateEmail(email);
 
-        var exists = await _customerRepository.ExistsByPhoneAsync(phone, null, cancellationToken);
-        if (exists)
+        var existingByPhone = await _customerRepository.FindByPhoneAsync(phone, cancellationToken);
+        if (existingByPhone != null)
         {
-            throw new BizDataAlreadyExistsException(ErrorCode4xx.DataAlreadyExists, new[] { "phoneNumber" });
+            existingByPhone.FullName = fullName;
+            existingByPhone.Email = email;
+            existingByPhone.LoyaltyCode = string.IsNullOrWhiteSpace(existingByPhone.LoyaltyCode)
+                ? GenerateLoyaltyCode(phone)
+                : existingByPhone.LoyaltyCode;
+
+            var updated = await _customerRepository.UpdateAsync(existingByPhone, cancellationToken);
+            _logger.LogInformation("Updated loyalty customer {CustomerId} via phone overwrite.", updated.CustomerId);
+            var dto = CustomerMapper.ToDto(updated);
+            dto.IsUpdated = true;
+            return dto;
+        }
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            var existingByEmail = await _customerRepository.FindByEmailAsync(email, cancellationToken);
+            if (existingByEmail != null)
+            {
+                throw new BizDataAlreadyExistsException(ErrorCode4xx.DataAlreadyExists, new[] { "email" });
+            }
         }
 
         var customer = new Customer
@@ -64,7 +83,9 @@ public class CustomerService
 
         var created = await _customerRepository.AddAsync(customer, cancellationToken);
         _logger.LogInformation("Created customer {CustomerId} with loyalty code {Code}", created.CustomerId, created.LoyaltyCode);
-        return CustomerMapper.ToDto(created);
+        var response = CustomerMapper.ToDto(created);
+        response.IsUpdated = false;
+        return response;
     }
 
     public async Task<Customer> GetByIdAsync(long customerId, CancellationToken cancellationToken)

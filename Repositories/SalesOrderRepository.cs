@@ -39,6 +39,12 @@ public class SalesOrderRepository
                 cancellationToken);
     }
 
+    public Task<SalesOrderPending?> GetPendingByIdAsync(long pendingId, CancellationToken cancellationToken)
+    {
+        return _dbContext.SalesOrderPendings
+            .FirstOrDefaultAsync(pending => pending.PendingId == pendingId, cancellationToken);
+    }
+
     public async Task<SalesOrderPending> UpdatePendingAsync(SalesOrderPending pending, CancellationToken cancellationToken)
     {
         _dbContext.SalesOrderPendings.Update(pending);

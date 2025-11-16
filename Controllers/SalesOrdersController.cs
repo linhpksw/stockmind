@@ -69,6 +69,14 @@ public class SalesOrdersController : ControllerBase
         return Ok(new ResponseModel<SalesOrderSummaryDto>(summary));
     }
 
+    [HttpGet("pending/{id:long}")]
+    [Authorize(Roles = "ADMIN,INVENTORY_MANAGER,STORE_STAFF,CASHIER")]
+    public async Task<IActionResult> GetPendingStatusAsync([FromRoute] long id, CancellationToken cancellationToken)
+    {
+        var status = await _salesOrderService.GetPendingStatusAsync(id, cancellationToken);
+        return Ok(new ResponseModel<PendingSalesOrderStatusDto>(status));
+    }
+
     private (long userId, string fullName) ResolveCurrentUser()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier)
