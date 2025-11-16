@@ -114,6 +114,7 @@ namespace stockmind.Services
                     CategoryId = lot.Product.CategoryId,
                     CategoryName = lot.Product.Category?.Name,
                     UnitCost = unitCost,
+                    ListPrice = lot.Product.Price,
                     QtyReceived = qtyReceived,
                     LotSaleDecisionId = decision?.LotSaleDecisionId,
                     LotSaleDecisionApplied = decision?.IsApplied ?? false,

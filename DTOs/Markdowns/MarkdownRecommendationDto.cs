@@ -18,6 +18,8 @@ namespace stockmind.DTOs.Markdowns
 
         public decimal UnitCost { get; set; }
 
+        public decimal ListPrice { get; set; }
+
         public decimal QtyReceived { get; set; }
 
         public long? LotSaleDecisionId { get; set; }
