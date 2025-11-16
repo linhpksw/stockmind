@@ -25,5 +25,7 @@ public partial class Customer
 
     public bool Deleted { get; set; }
 
+    public virtual ICollection<SalesOrderPending> SalesOrderPendings { get; set; } = new List<SalesOrderPending>();
+
     public virtual ICollection<SalesOrder> SalesOrders { get; set; } = new List<SalesOrder>();
 }

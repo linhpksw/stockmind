@@ -23,6 +23,12 @@ public partial class SalesOrder
 
     public decimal Total { get; set; }
 
+    public int LoyaltyPointsEarned { get; set; }
+
+    public int LoyaltyPointsRedeemed { get; set; }
+
+    public decimal LoyaltyAmountRedeemed { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime LastModifiedAt { get; set; }
