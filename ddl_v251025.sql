@@ -378,7 +378,6 @@ GO
 
 CREATE INDEX IX_Lot_Product_Expiry    ON dbo.Lot(product_id, expiry_date);
 CREATE INDEX IX_Lot_Product_Received  ON dbo.Lot(product_id, received_at);
-CREATE INDEX IX_Inv_Product           ON dbo.Inventory(product_id);
 CREATE INDEX IX_SM_Product_Created    ON dbo.StockMovement(product_id, created_at DESC);
 CREATE INDEX IX_SM_Ref                ON dbo.StockMovement(ref_type, ref_id);
 CREATE INDEX IX_POItem_PO             ON dbo.POItem(po_id);

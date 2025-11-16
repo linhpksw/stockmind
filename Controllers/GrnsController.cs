@@ -63,5 +63,21 @@ namespace stockmind.Controllers
 
             return Ok(new ResponseModel<GrnResponseDto>(grn));
         }
+
+        [HttpPost("po/{poId}/accept")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
+        public async Task<IActionResult> AcceptPoAsync(long poId, CancellationToken cancellationToken)
+        {
+            var summary = await _grnService.AcceptPoAsync(poId, cancellationToken);
+            return Ok(new ResponseModel<GrnSummaryDto>(summary));
+        }
+
+        [HttpPost("po/{poId}/cancel")]
+        [Authorize(Roles = "ADMIN,INVENTORY_MANAGER")]
+        public async Task<IActionResult> CancelPoAsync(long poId, CancellationToken cancellationToken)
+        {
+            var summary = await _grnService.CancelPoAsync(poId, cancellationToken);
+            return Ok(new ResponseModel<GrnSummaryDto>(summary));
+        }
     }
 }

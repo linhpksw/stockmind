@@ -148,6 +148,56 @@ namespace stockmind.Services
 
             return new PageResponseModel<GrnSummaryDto>(normalizedPageSize, normalizedPageNum, totalCapped, results);
         }
+
+        [Transactional]
+        public virtual async Task<GrnSummaryDto> AcceptPoAsync(long poId, CancellationToken cancellationToken)
+        {
+            var po = await _poRepository.FindByIdAsync(poId, cancellationToken)
+                     ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={poId}" });
+
+            if (po.Deleted)
+            {
+                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={poId}" });
+            }
+
+            if (!string.Equals(po.Status, "OPEN", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "Only open purchase orders can be accepted." });
+            }
+
+            var request = BuildRequestFromPo(po);
+            var (grn, _) = await CreateGrnInternalAsync(request, cancellationToken);
+
+            po.Status = "RECEIVED";
+            po.LastModifiedAt = DateTime.UtcNow;
+            await _poRepository.SaveChangesAsync(cancellationToken);
+
+            return MapToSummary(grn, po, request);
+        }
+
+        [Transactional]
+        public virtual async Task<GrnSummaryDto> CancelPoAsync(long poId, CancellationToken cancellationToken)
+        {
+            var po = await _poRepository.FindByIdAsync(poId, cancellationToken)
+                     ?? throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={poId}" });
+
+            if (po.Deleted)
+            {
+                throw new BizNotFoundException(ErrorCode4xx.NotFound, new[] { $"PO={poId}" });
+            }
+
+            if (!string.Equals(po.Status, "OPEN", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new BizException(ErrorCode4xx.InvalidInput, new[] { "Only open purchase orders can be cancelled." });
+            }
+
+            po.Status = "CANCELLED";
+            po.LastModifiedAt = DateTime.UtcNow;
+            await _poRepository.SaveChangesAsync(cancellationToken);
+
+            return MapPendingPoToSummary(po);
+        }
+
         private async Task<(Grn grn, List<StockMovementDto> stockMovements)> CreateGrnInternalAsync(
             CreateGrnRequestDto request,
             CancellationToken cancellationToken)
